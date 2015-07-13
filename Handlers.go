@@ -7,7 +7,15 @@ import (
     "net/http"
 	"io"
 	"io/ioutil"
+	"github.com/somanole/gait/acceleration"
+	"github.com/somanole/gait/repo"
 )
+
+var repository repo.Repo
+
+func init() {
+	repository = repo.New()
+}
 
 func Index(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintln(w, "Welcome Sorin!")
@@ -16,13 +24,15 @@ func Index(w http.ResponseWriter, r *http.Request) {
 func AccelerationIndex(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json; charset=UTF-8")
     w.WriteHeader(http.StatusOK)
+	
+	accelerations := repository.GetAllAccelerations()
     if err := json.NewEncoder(w).Encode(accelerations); err != nil {
         panic(err)
     }
 }
 
 func AccelerationCreate(w http.ResponseWriter, r *http.Request) {
-	var acceleration Acceleration
+	var acceleration acceleration.Acceleration
     body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
     if err != nil {
         panic(err)
@@ -38,7 +48,7 @@ func AccelerationCreate(w http.ResponseWriter, r *http.Request) {
         }
     }
 
-    a := RepoCreateAcceleration(acceleration)
+    a := repository.CreateAcceleration(acceleration)
     w.Header().Set("Content-Type", "application/json; charset=UTF-8")
     w.WriteHeader(http.StatusCreated)
     if err := json.NewEncoder(w).Encode(a); err != nil {
