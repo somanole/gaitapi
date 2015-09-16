@@ -6,7 +6,7 @@ package repo
 import (
 	"fmt"
 	"log"
-	"github.com/somanole/gait/acceleration"
+	"github.com/somanole/gaitapi/acceleration"
 )
 
 type MockedRepo struct {}
@@ -36,6 +36,10 @@ func (repo *MockedRepo) GetAllAccelerations() acceleration.Accelerations {
 	log.Println("Mocked - trying to get all accelerations")
 	
 	return accelerations
+}
+
+func (repo *MockedRepo) GetAccelerationsCount() int64 {
+	return len(accelerations)
 }
 
 func (repo *MockedRepo) CreateAcceleration(a acceleration.Acceleration) acceleration.Acceleration {

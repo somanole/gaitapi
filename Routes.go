@@ -47,6 +47,12 @@ var routes = Routes{
         "/accelerations",
         AccelerationIndex,
     },
+	Route{
+        "AccelerationsCount",
+        "GET",
+        "/accelerations/count",
+        AccelerationsCount,
+    },
     Route{
         "Acceleration",
         "POST",

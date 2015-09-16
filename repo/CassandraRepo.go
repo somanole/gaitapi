@@ -6,7 +6,7 @@ package repo
 import (
 	"fmt"
 	"log"
-	"github.com/somanole/gait/acceleration"
+	"github.com/somanole/gaitapi/acceleration"
 	"github.com/gocql/gocql"
 )
 
@@ -73,6 +73,17 @@ func (repo *CassandraRepo) GetAllAccelerations() acceleration.Accelerations {
 	}
 	
 	return accelerations
+}
+
+func (repo *CassandraRepo) GetAccelerationsCount() int64 {
+	// select count of all accelerations
+	var count int64
+	
+	if err := session.Query("SELECT COUNT(*) FROM accelerations").Scan(&count); err != nil {
+		log.Fatal(err)
+	}
+	
+	return count
 }
 
 func (repo *CassandraRepo) CreateAcceleration(a acceleration.Acceleration) acceleration.Acceleration {

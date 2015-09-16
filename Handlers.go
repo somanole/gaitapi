@@ -7,8 +7,8 @@ import (
     "net/http"
 	"io"
 	"io/ioutil"
-	"github.com/somanole/gait/acceleration"
-	"github.com/somanole/gait/repo"
+	"github.com/somanole/gaitapi/acceleration"
+	"github.com/somanole/gaitapi/repo"
 )
 
 var repository repo.Repo
@@ -27,6 +27,16 @@ func AccelerationIndex(w http.ResponseWriter, r *http.Request) {
 	
 	accelerations := repository.GetAllAccelerations()
     if err := json.NewEncoder(w).Encode(accelerations); err != nil {
+        panic(err)
+    }
+}
+
+func AccelerationsCount(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+    w.WriteHeader(http.StatusOK)
+	
+	count := repository.GetAccelerationsCount()
+    if err := json.NewEncoder(w).Encode(count); err != nil {
         panic(err)
     }
 }
