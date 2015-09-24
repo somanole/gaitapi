@@ -53,10 +53,28 @@ var routes = Routes{
         "/accelerations/count",
         AccelerationsCount,
     },
-    Route{
-        "Acceleration",
+	Route{
+        "AccelerationCreate",
         "POST",
         "/acceleration",
         AccelerationCreate,
+    },
+    Route{
+        "ValidateAccessCode",
+        "POST",
+        "/accesscode/validate",
+        ValidateAccessCode,
+    },
+	Route{
+        "HelpPageIndex",
+        "GET",
+        "/help",
+        HelpPageIndex,
+    },
+	Route{
+        "HelpPageCss",
+        "GET",
+        "/help/css",
+        HelpPageCss,
     },
 }
