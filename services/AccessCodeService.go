@@ -25,3 +25,9 @@ func ValidateAccessCode(accessCode AccessCode) ValidateAccessCodeResponse {
 	
 	return response
 }
+
+func GetAccessCode() AccessCode {
+	response := AccessCode{"websummit2015"}
+	
+	return response
+}

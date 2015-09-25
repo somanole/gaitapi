@@ -66,6 +66,12 @@ var routes = Routes{
         ValidateAccessCode,
     },
 	Route{
+        "GetAccessCode",
+        "GET",
+        "/accesscode",
+        GetAccessCode,
+    },
+	Route{
         "HelpPageIndex",
         "GET",
         "/help",
@@ -76,5 +82,35 @@ var routes = Routes{
         "GET",
         "/help/css",
         HelpPageCss,
+    },
+	Route{
+        "HelpPagePOSTAccesscodeValidate",
+        "GET",
+        "/help/POST-accesscode-validate",
+        HelpPagePOSTAccesscodeValidate,
+    },
+	Route{
+        "HelpPageGETAccesscode",
+        "GET",
+        "/help/GET-accesscode",
+        HelpPageGETAccesscode,
+    },
+	Route{
+        "HelpPagePOSTAcceleration",
+        "GET",
+        "/help/POST-acceleration",
+        HelpPagePOSTAcceleration,
+    },
+	Route{
+        "HelpPageGETAccelerations",
+        "GET",
+        "/help/GET-accelerations",
+        HelpPageGETAccelerations,
+    },
+	Route{
+        "HelpPageGETAccelerationsCount",
+        "GET",
+        "/help/GET-accelerations-count",
+        HelpPageGETAccelerationsCount,
     },
 }

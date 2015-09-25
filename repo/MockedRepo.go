@@ -38,8 +38,9 @@ func (repo *MockedRepo) GetAllAccelerations() acceleration.Accelerations {
 	return accelerations
 }
 
-func (repo *MockedRepo) GetAccelerationsCount() int64 {
-	return len(accelerations)
+func (repo *MockedRepo) GetAccelerationsCount() acceleration.AccelerationsCount {
+	count := acceleration.AccelerationsCount{len(accelerations)}
+	return count
 }
 
 func (repo *MockedRepo) CreateAcceleration(a acceleration.Acceleration) acceleration.Acceleration {

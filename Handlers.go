@@ -19,7 +19,7 @@ func init() {
 }
 
 func Index(w http.ResponseWriter, r *http.Request) {
-    fmt.Fprintln(w, "Welcome Sorin!")
+    fmt.Fprintln(w, "Let's go for a walk.")
 }
 
 func AccelerationIndex(w http.ResponseWriter, r *http.Request) {
@@ -33,13 +33,16 @@ func AccelerationIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 func AccelerationsCount(w http.ResponseWriter, r *http.Request) {
-    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-    w.WriteHeader(http.StatusOK)
+    fmt.Fprintln(w, "Method temporarily unavailable")
 	
-	count := repository.GetAccelerationsCount()
-    if err := json.NewEncoder(w).Encode(count); err != nil {
-        panic(err)
-    }
+	//w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+    //w.WriteHeader(http.StatusOK)
+	
+	//count := repository.GetAccelerationsCount()
+    //if err := json.NewEncoder(w).Encode(count); err != nil {
+		//panic(err)
+    //    fmt.Fprintln(w, err)
+    //}
 }
 
 func AccelerationCreate(w http.ResponseWriter, r *http.Request) {
@@ -59,12 +62,9 @@ func AccelerationCreate(w http.ResponseWriter, r *http.Request) {
         }
     }
 
-    a := repository.CreateAcceleration(acceleration)
+    repository.CreateAcceleration(acceleration)
     w.Header().Set("Content-Type", "application/json; charset=UTF-8")
     w.WriteHeader(http.StatusCreated)
-    if err := json.NewEncoder(w).Encode(a); err != nil {
-        panic(err)
-    }
 }
 
 func ValidateAccessCode(w http.ResponseWriter, r *http.Request) {
@@ -92,6 +92,15 @@ func ValidateAccessCode(w http.ResponseWriter, r *http.Request) {
     }
 }
 
+func GetAccessCode(w http.ResponseWriter, r *http.Request) {
+    response := services.GetAccessCode()
+    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+    w.WriteHeader(http.StatusOK)
+    if err := json.NewEncoder(w).Encode(response); err != nil {
+        panic(err)
+    }
+}
+
 func HelpPageIndex(w http.ResponseWriter, r *http.Request) {
     body, _ := ioutil.ReadFile("helppage/index.html")
     fmt.Fprint(w, string(body))
@@ -103,5 +112,30 @@ func HelpPageCss(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/css; charset=UTF-8")
     w.WriteHeader(http.StatusOK)
 	
+    fmt.Fprint(w, string(body))
+}
+
+func HelpPagePOSTAccesscodeValidate(w http.ResponseWriter, r *http.Request) {
+    body, _ := ioutil.ReadFile("helppage/POST-accesscode-validate.html")
+    fmt.Fprint(w, string(body))
+}
+
+func HelpPageGETAccesscode(w http.ResponseWriter, r *http.Request) {
+    body, _ := ioutil.ReadFile("helppage/GET-accesscode.html")
+    fmt.Fprint(w, string(body))
+}
+
+func HelpPagePOSTAcceleration(w http.ResponseWriter, r *http.Request) {
+    body, _ := ioutil.ReadFile("helppage/POST-acceleration.html")
+    fmt.Fprint(w, string(body))
+}
+
+func HelpPageGETAccelerations(w http.ResponseWriter, r *http.Request) {
+    body, _ := ioutil.ReadFile("helppage/GET-accelerations.html")
+    fmt.Fprint(w, string(body))
+}
+
+func HelpPageGETAccelerationsCount(w http.ResponseWriter, r *http.Request) {
+    body, _ := ioutil.ReadFile("helppage/GET-accelerations-count.html")
     fmt.Fprint(w, string(body))
 }

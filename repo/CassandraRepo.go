@@ -75,7 +75,7 @@ func (repo *CassandraRepo) GetAllAccelerations() acceleration.Accelerations {
 	return accelerations
 }
 
-func (repo *CassandraRepo) GetAccelerationsCount() int64 {
+func (repo *CassandraRepo) GetAccelerationsCount() acceleration.AccelerationsCount {
 	// select count of all accelerations
 	var count int64
 	
@@ -83,7 +83,9 @@ func (repo *CassandraRepo) GetAccelerationsCount() int64 {
 		log.Fatal(err)
 	}
 	
-	return count
+	response := acceleration.AccelerationsCount{count}
+	
+	return response
 }
 
 func (repo *CassandraRepo) CreateAcceleration(a acceleration.Acceleration) acceleration.Acceleration {
