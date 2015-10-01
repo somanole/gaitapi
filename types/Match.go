@@ -1,0 +1,20 @@
+// Match
+package types
+
+import "code.google.com/p/go-uuid/uuid"
+
+type Match struct{
+	UserId uuid.UUID
+	MatchedUserId uuid.UUID
+	MatchedUsername string
+	IsMatchActive bool
+	IsChatActive bool
+	Timestamp int64
+}
+
+type MatchGroup struct{
+	Groupname string
+	UserId uuid.UUID
+	hashPrefix int
+	Timestamp int64
+}

@@ -11,7 +11,7 @@ type AccessCode struct{
 
 type ValidateAccessCodeResponse struct{
 	AccessCode string
-	Valid bool
+	IsValid bool
 }
 
 func ValidateAccessCode(accessCode AccessCode) ValidateAccessCodeResponse {

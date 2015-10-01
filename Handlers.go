@@ -7,15 +7,19 @@ import (
     "net/http"
 	"io"
 	"io/ioutil"
-	"github.com/somanole/gaitapi/acceleration"
-	"github.com/somanole/gaitapi/repo"
+	"github.com/gorilla/mux"
+	"github.com/somanole/gaitapi/types"
+	"github.com/somanole/gaitapi/accelerationrepo"
+	"github.com/somanole/gaitapi/userrepo"
 	"github.com/somanole/gaitapi/services"
 )
 
-var repository repo.Repo
+var accelerationRepo accelerationrepo.AccelerationRepo
+var userRepo userrepo.UserRepo
 
 func init() {
-	repository = repo.New()
+	accelerationRepo = accelerationrepo.New()
+	userRepo = userrepo.New()
 }
 
 func Index(w http.ResponseWriter, r *http.Request) {
@@ -26,7 +30,7 @@ func AccelerationIndex(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json; charset=UTF-8")
     w.WriteHeader(http.StatusOK)
 	
-	accelerations := repository.GetAllAccelerations()
+	accelerations := accelerationRepo.GetAllAccelerations()
     if err := json.NewEncoder(w).Encode(accelerations); err != nil {
         panic(err)
     }
@@ -38,7 +42,7 @@ func AccelerationsCount(w http.ResponseWriter, r *http.Request) {
 	//w.Header().Set("Content-Type", "application/json; charset=UTF-8")
     //w.WriteHeader(http.StatusOK)
 	
-	//count := repository.GetAccelerationsCount()
+	//count := accelerationRepo.GetAccelerationsCount()
     //if err := json.NewEncoder(w).Encode(count); err != nil {
 		//panic(err)
     //    fmt.Fprintln(w, err)
@@ -46,7 +50,7 @@ func AccelerationsCount(w http.ResponseWriter, r *http.Request) {
 }
 
 func AccelerationCreate(w http.ResponseWriter, r *http.Request) {
-	var acceleration acceleration.Acceleration
+	var acceleration types.Acceleration
     body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
     if err != nil {
         panic(err)
@@ -62,7 +66,7 @@ func AccelerationCreate(w http.ResponseWriter, r *http.Request) {
         }
     }
 
-    repository.CreateAcceleration(acceleration)
+    accelerationRepo.CreateAcceleration(acceleration)
     w.Header().Set("Content-Type", "application/json; charset=UTF-8")
     w.WriteHeader(http.StatusCreated)
 }
@@ -99,6 +103,115 @@ func GetAccessCode(w http.ResponseWriter, r *http.Request) {
     if err := json.NewEncoder(w).Encode(response); err != nil {
         panic(err)
     }
+}
+
+func CreateUser(w http.ResponseWriter, r *http.Request) {
+	var user types.User
+    body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+    if err != nil {
+        panic(err)
+    }
+    if err := r.Body.Close(); err != nil {
+        panic(err)
+    }
+    if err := json.Unmarshal(body, &user); err != nil {
+        w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+        w.WriteHeader(422) // unprocessable entity
+        if err := json.NewEncoder(w).Encode(err); err != nil {
+            panic(err)
+        }
+    }
+
+    response := userRepo.CreateUser(user)
+    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+    w.WriteHeader(http.StatusCreated)
+    if err := json.NewEncoder(w).Encode(response); err != nil {
+        panic(err)
+    }
+}
+
+func GetUser(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	userId := vars["id"]
+	
+	if userId != "" {
+		var response types.GetUserResponse
+	
+	    user, err := userRepo.GetUser(userId)
+		
+		if err != nil{
+			if err.Error() == "not found"{
+					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    			w.WriteHeader(http.StatusNotFound)	
+			} else if err.Error() == "not uuid"{
+				w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    		w.WriteHeader(http.StatusBadRequest)	
+			} else{
+				w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    		w.WriteHeader(http.StatusInternalServerError)	
+			}		
+		} else{
+			response.DeviceType = user.DeviceType
+			response.IsAnonymous = user.IsAnonymous
+			response.IsTest = user.IsTest
+			response.Timestamp = user.Timestamp
+			response.UserId = user.UserId
+			response.Username = user.Username
+			
+		    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		    w.WriteHeader(http.StatusOK)
+		    if err := json.NewEncoder(w).Encode(response); err != nil {
+		        panic(err)
+		    }
+		}	
+	} else{
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+    	w.WriteHeader(http.StatusBadRequest)	
+	}
+}
+
+func UpdateUser(w http.ResponseWriter, r *http.Request) {
+	var user types.User
+	vars := mux.Vars(r)
+	userId := vars["id"]
+	
+    body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+    if err != nil {
+        panic(err)
+    }
+	
+    if err := r.Body.Close(); err != nil {
+        panic(err)
+    }
+	
+    if err := json.Unmarshal(body, &user); err != nil {
+        w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+        w.WriteHeader(422) // unprocessable entity
+        if err := json.NewEncoder(w).Encode(err); err != nil {
+            panic(err)
+        }
+    }
+
+    response, err := userRepo.UpdateUser(userId, user)
+	
+	if err != nil{
+		if err.Error() == "not found"{
+			w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    	w.WriteHeader(http.StatusNotFound)	
+		} else if err.Error() == "not uuid"{
+				w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    		w.WriteHeader(http.StatusBadRequest)	
+		} else{
+			w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    	w.WriteHeader(http.StatusInternalServerError)	
+		}
+	} else{
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	    w.WriteHeader(http.StatusOK)
+	    if err := json.NewEncoder(w).Encode(response); err != nil {
+	        panic(err)
+	    }
+	}
 }
 
 func HelpPageIndex(w http.ResponseWriter, r *http.Request) {

@@ -113,4 +113,22 @@ var routes = Routes{
         "/help/GET-accelerations-count",
         HelpPageGETAccelerationsCount,
     },
+	Route{
+        "CreateUser",
+        "POST",
+        "/user",
+        CreateUser,
+    },
+	Route{
+        "GetUser",
+        "GET",
+        "/user/{id}",
+        GetUser,
+    },
+	Route{
+        "UpdateUser",
+        "PUT",
+        "/user/{id}",
+        UpdateUser,
+    },
 }
