@@ -41,24 +41,6 @@ var routes = Routes{
         "/",
         Index,
     },
-	Route{
-        "AccelerationIndex",
-        "GET",
-        "/accelerations",
-        AccelerationIndex,
-    },
-	Route{
-        "AccelerationsCount",
-        "GET",
-        "/accelerations/count",
-        AccelerationsCount,
-    },
-	Route{
-        "AccelerationCreate",
-        "POST",
-        "/accelerations",
-        AccelerationCreate,
-    },
     Route{
         "ValidateAccessCode",
         "POST",
@@ -172,5 +154,11 @@ var routes = Routes{
         "GET",
         "/users/{userid}/activities",
         GetUserActivity,
+    },
+	Route{
+        "CreateUserAcceleration",
+        "POST",
+        "/users/{userid}/accelerations",
+        CreateUserAcceleration,
     },
 }

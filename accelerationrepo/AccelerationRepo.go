@@ -7,11 +7,7 @@ import (
 
 type (
 	AccelerationRepo interface {
-		GetAcceleration(userId int64) types.Acceleration
-		GetAllAccelerations() types.Accelerations
-		GetAccelerationsCount() types.AccelerationsCount
-		CreateAcceleration(acceleration types.Acceleration) types.Acceleration
-		DeleteAcceleration(userId int64) error
+		CreateAcceleration(userId string, acceleration types.AccelerationRequest) error
 	}
 	
 	repoFactory func() AccelerationRepo

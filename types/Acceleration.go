@@ -1,8 +1,17 @@
 // Acceleration
 package types
 
+import "code.google.com/p/go-uuid/uuid"
+
 type Acceleration struct {
-	UserId int64 
+	UserId uuid.UUID 
+	Timestamp int64 
+	X float64 
+	Y float64 
+	Z float64
+}
+
+type AccelerationRequest struct {
 	Timestamp int64 
 	X float64 
 	Y float64 

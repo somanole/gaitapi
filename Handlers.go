@@ -36,44 +36,51 @@ func Index(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintln(w, "Let's go for a walk.")
 }
 
-func AccelerationIndex(w http.ResponseWriter, r *http.Request) {
-    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-    w.WriteHeader(http.StatusOK)
-	
-	accelerations := accelerationRepo.GetAllAccelerations()
-    if err := json.NewEncoder(w).Encode(accelerations); err != nil {
-    	log.Printf(fmt.Sprintf("AccelerationIndex - Error: %v", err.Error()))
-		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-	    w.WriteHeader(http.StatusInternalServerError)	
-    }
-}
-
-func AccelerationsCount(w http.ResponseWriter, r *http.Request) {
-    fmt.Fprintln(w, "Method temporarily unavailable")
-}
-
-func AccelerationCreate(w http.ResponseWriter, r *http.Request) {
-	var acceleration types.Acceleration
+func CreateUserAcceleration(w http.ResponseWriter, r *http.Request) {
+	var acceleration types.AccelerationRequest
 	var hasexploded string
 	hasexploded = ""
 	
-    body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+	vars := mux.Vars(r)
+	userId := vars["userid"]
 	
-    if err != nil {
-        hasexploded = err.Error()
-    } else if err := r.Body.Close(); err != nil {
-        hasexploded = err.Error()
-    } else if err := json.Unmarshal(body, &acceleration); err != nil {
-        w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-        w.WriteHeader(422) // unprocessable entity
-		
-        if err := json.NewEncoder(w).Encode(err); err != nil {
-            hasexploded = err.Error()
-        }
-    } else {
-		accelerationRepo.CreateAcceleration(acceleration)
-    	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-    	w.WriteHeader(http.StatusCreated)
+	log.Printf(fmt.Sprintf("CreateUserAcceleration - Received userId: %v", userId))
+	
+	if userId != "" {
+		 body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+	
+	    if err != nil {
+	        hasexploded = err.Error()
+	    } else if err := r.Body.Close(); err != nil {
+	        hasexploded = err.Error()
+	    } else if err := json.Unmarshal(body, &acceleration); err != nil {
+	        w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	        w.WriteHeader(422) // unprocessable entity
+			
+	        if err := json.NewEncoder(w).Encode(err); err != nil {
+	            hasexploded = err.Error()
+	        }
+	    } else {
+			err := accelerationRepo.CreateAcceleration(userId, acceleration)
+	    	
+			if err != nil {
+				if err.Error() == "not found" {
+					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    			w.WriteHeader(http.StatusNotAcceptable)	
+				} else if err.Error() == "not uuid" {
+					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+		    		w.WriteHeader(http.StatusBadRequest)	
+				} else {
+					hasexploded = err.Error()
+				}		
+			} else {
+				w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		    	w.WriteHeader(http.StatusCreated)
+			}   
+		}
+	} else {
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+    	w.WriteHeader(http.StatusBadRequest)
 	}
 	
 	if hasexploded != "" {
