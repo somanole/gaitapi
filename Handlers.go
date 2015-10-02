@@ -7,6 +7,7 @@ import (
     "net/http"
 	"io"
 	"io/ioutil"
+	"log"
 	"github.com/gorilla/mux"
 	"github.com/somanole/gaitapi/types"
 	"github.com/somanole/gaitapi/accelerationrepo"
@@ -32,107 +33,144 @@ func AccelerationIndex(w http.ResponseWriter, r *http.Request) {
 	
 	accelerations := accelerationRepo.GetAllAccelerations()
     if err := json.NewEncoder(w).Encode(accelerations); err != nil {
-        panic(err)
+    	log.Printf(fmt.Sprintf("AccelerationIndex - Error: %v", err.Error()))
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    w.WriteHeader(http.StatusInternalServerError)	
     }
 }
 
 func AccelerationsCount(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintln(w, "Method temporarily unavailable")
-	
-	//w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-    //w.WriteHeader(http.StatusOK)
-	
-	//count := accelerationRepo.GetAccelerationsCount()
-    //if err := json.NewEncoder(w).Encode(count); err != nil {
-		//panic(err)
-    //    fmt.Fprintln(w, err)
-    //}
 }
 
 func AccelerationCreate(w http.ResponseWriter, r *http.Request) {
 	var acceleration types.Acceleration
+	var hasexploded string
+	hasexploded = ""
+	
     body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+	
     if err != nil {
-        panic(err)
-    }
-    if err := r.Body.Close(); err != nil {
-        panic(err)
-    }
-    if err := json.Unmarshal(body, &acceleration); err != nil {
+        hasexploded = err.Error()
+    } else if err := r.Body.Close(); err != nil {
+        hasexploded = err.Error()
+    } else if err := json.Unmarshal(body, &acceleration); err != nil {
         w.Header().Set("Content-Type", "application/json; charset=UTF-8")
         w.WriteHeader(422) // unprocessable entity
+		
         if err := json.NewEncoder(w).Encode(err); err != nil {
-            panic(err)
+            hasexploded = err.Error()
         }
-    }
-
-    accelerationRepo.CreateAcceleration(acceleration)
-    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-    w.WriteHeader(http.StatusCreated)
+    } else {
+		accelerationRepo.CreateAcceleration(acceleration)
+    	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+    	w.WriteHeader(http.StatusCreated)
+	}
+	
+	if hasexploded != "" {
+		log.Printf(fmt.Sprintf("AccelerationCreate - HasExploded! - Error: %v", hasexploded))
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    w.WriteHeader(http.StatusInternalServerError)	
+	}
 }
 
 func ValidateAccessCode(w http.ResponseWriter, r *http.Request) {
     var accessCode services.AccessCode
+	var hasexploded string
+	hasexploded = ""
+	
     body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+	
     if err != nil {
-        panic(err)
-    }
-    if err := r.Body.Close(); err != nil {
-        panic(err)
-    }
-    if err := json.Unmarshal(body, &accessCode); err != nil {
+        hasexploded = err.Error()
+    } else if err := r.Body.Close(); err != nil {
+        hasexploded = err.Error()
+    } else if err := json.Unmarshal(body, &accessCode); err != nil {
         w.Header().Set("Content-Type", "application/json; charset=UTF-8")
         w.WriteHeader(422) // unprocessable entity
+		
         if err := json.NewEncoder(w).Encode(err); err != nil {
-            panic(err)
+            hasexploded = err.Error()
         }
-    }
-
-    response := services.ValidateAccessCode(accessCode)
-    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-    w.WriteHeader(http.StatusOK)
-    if err := json.NewEncoder(w).Encode(response); err != nil {
-        panic(err)
-    }
+    } else {
+		response := services.ValidateAccessCode(accessCode)
+	    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	    w.WriteHeader(http.StatusOK)
+		
+	    if err := json.NewEncoder(w).Encode(response); err != nil {
+	        hasexploded = err.Error()
+	    }
+	} 
+	
+	if hasexploded != "" {
+		log.Printf(fmt.Sprintf("ValidateAccessCode - HasExploded! - Error: %v", hasexploded))
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    w.WriteHeader(http.StatusInternalServerError)	
+	}
 }
 
 func GetAccessCode(w http.ResponseWriter, r *http.Request) {
     response := services.GetAccessCode()
+	
     w.Header().Set("Content-Type", "application/json; charset=UTF-8")
     w.WriteHeader(http.StatusOK)
+	
     if err := json.NewEncoder(w).Encode(response); err != nil {
-        panic(err)
+        log.Printf(fmt.Sprintf("GetAccessCode - Error: %v", err.Error()))
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    w.WriteHeader(http.StatusInternalServerError)	
     }
 }
 
 func CreateUser(w http.ResponseWriter, r *http.Request) {
 	var user types.User
+	var hasexploded string
+	hasexploded = ""
+	
     body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+	
     if err != nil {
-        panic(err)
-    }
-    if err := r.Body.Close(); err != nil {
-        panic(err)
-    }
-    if err := json.Unmarshal(body, &user); err != nil {
+        hasexploded = err.Error()
+    } else if err := r.Body.Close(); err != nil {
+        hasexploded = err.Error()
+    } else if err := json.Unmarshal(body, &user); err != nil {
         w.Header().Set("Content-Type", "application/json; charset=UTF-8")
         w.WriteHeader(422) // unprocessable entity
         if err := json.NewEncoder(w).Encode(err); err != nil {
-            panic(err)
+            hasexploded = err.Error()
         }
-    }
-
-    response := userRepo.CreateUser(user)
-    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-    w.WriteHeader(http.StatusCreated)
-    if err := json.NewEncoder(w).Encode(response); err != nil {
-        panic(err)
-    }
+    } else {
+		response, err := userRepo.CreateUser(user)
+	
+		if err != nil {
+			if err.Error() == "email already registered" {
+				w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+		    	w.WriteHeader(http.StatusConflict)	
+			} else {
+				hasexploded = err.Error()
+			}	
+		} else {
+			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	    	w.WriteHeader(http.StatusCreated)
+	    	if err := json.NewEncoder(w).Encode(response); err != nil {
+	        	hasexploded = err.Error()
+	    	}
+		}   
+	}
+	
+	if hasexploded != "" {
+		log.Printf(fmt.Sprintf("CreateUser - HasExploded! - Error: %v", hasexploded))
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    w.WriteHeader(http.StatusInternalServerError)	
+	}
 }
 
 func GetUser(w http.ResponseWriter, r *http.Request) {
+	var hasexploded string
+	hasexploded = ""
+	
 	vars := mux.Vars(r)
-	userId := vars["id"]
+	userId := vars["userid"]
 	
 	if userId != "" {
 		var response types.GetUserResponse
@@ -140,17 +178,16 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	    user, err := userRepo.GetUser(userId)
 		
 		if err != nil{
-			if err.Error() == "not found"{
+			if err.Error() == "not found" {
 					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
 	    			w.WriteHeader(http.StatusNotFound)	
-			} else if err.Error() == "not uuid"{
+			} else if err.Error() == "not uuid" {
 				w.Header().Set("Content-Type", "text/css; charset=UTF-8")
 	    		w.WriteHeader(http.StatusBadRequest)	
-			} else{
-				w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-	    		w.WriteHeader(http.StatusInternalServerError)	
+			} else {
+				hasexploded = err.Error()
 			}		
-		} else{
+		} else {
 			response.DeviceType = user.DeviceType
 			response.IsAnonymous = user.IsAnonymous
 			response.IsTest = user.IsTest
@@ -161,56 +198,146 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 		    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		    w.WriteHeader(http.StatusOK)
 		    if err := json.NewEncoder(w).Encode(response); err != nil {
-		        panic(err)
+		        hasexploded = err.Error()
 		    }
 		}	
-	} else{
+	} else {
 		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
     	w.WriteHeader(http.StatusBadRequest)	
+	}
+	
+	if hasexploded != "" {
+		log.Printf(fmt.Sprintf("GetUser - HasExploded! - Error: %v", hasexploded))
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    w.WriteHeader(http.StatusInternalServerError)	
 	}
 }
 
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	var user types.User
+	var hasexploded string
+	hasexploded = ""
+	
 	vars := mux.Vars(r)
-	userId := vars["id"]
-	
+	userId := vars["userid"]	
     body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+	
     if err != nil {
-        panic(err)
-    }
-	
-    if err := r.Body.Close(); err != nil {
-        panic(err)
-    }
-	
-    if err := json.Unmarshal(body, &user); err != nil {
+        hasexploded = err.Error()
+    } else if err := r.Body.Close(); err != nil {
+        hasexploded = err.Error()
+    } else if err := json.Unmarshal(body, &user); err != nil {
         w.Header().Set("Content-Type", "application/json; charset=UTF-8")
         w.WriteHeader(422) // unprocessable entity
         if err := json.NewEncoder(w).Encode(err); err != nil {
-            panic(err)
+            hasexploded = err.Error()	
         }
-    }
-
-    response, err := userRepo.UpdateUser(userId, user)
+    } else {
+		response, err := userRepo.UpdateUser(userId, user)
 	
-	if err != nil{
-		if err.Error() == "not found"{
-			w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-	    	w.WriteHeader(http.StatusNotFound)	
-		} else if err.Error() == "not uuid"{
+		if err != nil {
+			if err.Error() == "not found" {
+				w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+		    	w.WriteHeader(http.StatusNotFound)	
+			} else if err.Error() == "not uuid" {
+					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+		    		w.WriteHeader(http.StatusBadRequest)	
+			} else {
+				hasexploded = err.Error()
+			}
+		} else {
+			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		    w.WriteHeader(http.StatusOK)
+			
+		    if err := json.NewEncoder(w).Encode(response); err != nil {
+		        hasexploded = err.Error()
+		    }
+		}
+	}
+	
+	if hasexploded != "" {
+		log.Printf(fmt.Sprintf("UpdateUser - HasExploded! - Error: %v", hasexploded))
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
+func GetUserByEmail(w http.ResponseWriter, r *http.Request) {
+	var hasexploded string
+	hasexploded = ""
+	
+	vars := mux.Vars(r)
+	email := vars["email"]
+	
+	log.Printf(fmt.Sprintf("GetUserByEmail handler - email received: %v", email))
+	
+	if email != "" {
+	    response, err := userRepo.GetUserByEmail(email)
+		
+		if err != nil{
+			if err.Error() == "not found" {
+					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    			w.WriteHeader(http.StatusNotFound)	
+			} else {
+				hasexploded = err.Error()
+			}		
+		} else {
+		    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		    w.WriteHeader(http.StatusOK)
+			
+		    if err := json.NewEncoder(w).Encode(response); err != nil {
+		        hasexploded = err.Error()
+		    }
+		}	
+	} else {
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+    	w.WriteHeader(http.StatusBadRequest)	
+	}
+	
+	if hasexploded != "" {
+		log.Printf(fmt.Sprintf("GetUserByEmail - HasExploded! - Error: %v", hasexploded))
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
+func GetUserExtraInfo(w http.ResponseWriter, r *http.Request) {
+	var hasexploded string
+	hasexploded = ""
+	
+	vars := mux.Vars(r)
+	userId := vars["userid"]
+	
+	if userId != "" {
+	    response, err := userRepo.GetUserExtraInfo(userId)
+		
+		if err != nil{
+			if err.Error() == "not found" {
+					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    			w.WriteHeader(http.StatusNotFound)	
+			} else if err.Error() == "not uuid" {
 				w.Header().Set("Content-Type", "text/css; charset=UTF-8")
 	    		w.WriteHeader(http.StatusBadRequest)	
-		} else{
-			w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-	    	w.WriteHeader(http.StatusInternalServerError)	
-		}
-	} else{
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	    w.WriteHeader(http.StatusOK)
-	    if err := json.NewEncoder(w).Encode(response); err != nil {
-	        panic(err)
-	    }
+			} else {
+				hasexploded = err.Error()
+			}		
+		} else {
+		    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		    w.WriteHeader(http.StatusOK)
+			
+		    if err := json.NewEncoder(w).Encode(response); err != nil {
+		        hasexploded = err.Error()
+		    }
+		}	
+	} else {
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+    	w.WriteHeader(http.StatusBadRequest)	
+	}
+	
+	if hasexploded != "" {
+		log.Printf(fmt.Sprintf("GetUserExtraInfo - HasExploded! - Error: %v", hasexploded))
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    w.WriteHeader(http.StatusInternalServerError)
 	}
 }
 

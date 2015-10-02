@@ -122,13 +122,25 @@ var routes = Routes{
 	Route{
         "GetUser",
         "GET",
-        "/user/{id}",
+        "/user/{userid}",
         GetUser,
     },
 	Route{
         "UpdateUser",
         "PUT",
-        "/user/{id}",
+        "/user/{userid}",
         UpdateUser,
+    },
+	Route{
+        "GetUserByEmail",
+        "GET",
+        "/user/email/{email}",
+        GetUserByEmail,
+    },
+	Route{
+        "GetUserExtraInfo",
+        "GET",
+        "/user/extrainfo/{userid}",
+        GetUserExtraInfo,
     },
 }

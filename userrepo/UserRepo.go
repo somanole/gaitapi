@@ -8,8 +8,10 @@ import (
 type (
 	UserRepo interface {
 		GetUser(userId string) (types.User, error)
-		CreateUser(user types.User) types.CreateUserResponse
+		CreateUser(user types.User) (types.CreateUserResponse, error)
 		UpdateUser(userId string, u types.User) (types.CreateUserResponse, error)
+		GetUserByEmail(email string) (types.UserByEmail, error)
+		GetUserExtraInfo(userId string) (types.UserExtraInfo, error)
 	}
 	
 	repoFactory func() UserRepo
