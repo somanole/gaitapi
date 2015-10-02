@@ -89,6 +89,13 @@ func (repo *CassandraUserRepo) CreateUser(u types.User) (types.CreateUserRespons
 				if err = session.Query(sql).Exec(); err != nil {
 					log.Printf(fmt.Sprintf("CreateUser - Error: %v", err.Error()))
 				} 
+				
+				sql = fmt.Sprintf("INSERT INTO users_by_id (user_id, email) VALUES (%v, '%v')", u.UserId, u.Email)
+				
+				log.Printf(sql)
+				if err = session.Query(sql).Exec(); err != nil {
+					log.Printf(fmt.Sprintf("CreateUser - Error: %v", err.Error()))
+				} 
 			}
 	} else if existingEmail != "" {
 		err = errors.New("email already registered")

@@ -56,7 +56,7 @@ var routes = Routes{
 	Route{
         "AccelerationCreate",
         "POST",
-        "/acceleration",
+        "/accelerations",
         AccelerationCreate,
     },
     Route{
@@ -116,31 +116,61 @@ var routes = Routes{
 	Route{
         "CreateUser",
         "POST",
-        "/user",
+        "/users",
         CreateUser,
     },
 	Route{
         "GetUser",
         "GET",
-        "/user/{userid}",
+        "/users/{userid}",
         GetUser,
     },
 	Route{
         "UpdateUser",
         "PUT",
-        "/user/{userid}",
+        "/users/{userid}",
         UpdateUser,
     },
 	Route{
         "GetUserByEmail",
         "GET",
-        "/user/email/{email}",
+        "/users/email/{email}",
         GetUserByEmail,
     },
 	Route{
         "GetUserExtraInfo",
         "GET",
-        "/user/extrainfo/{userid}",
+        "/users/{userid}/extrainfo",
         GetUserExtraInfo,
+    },
+	Route{
+        "GetUserMatch",
+        "GET",
+        "/users/{userid}/match",
+        GetUserMatch,
+    },
+	Route{
+        "CreateMessage",
+        "POST",
+        "/users/{userid}/messages/{receiverid}",
+        CreateMessage,
+    },
+	Route{
+        "GetUserMessagesByReceiverId",
+        "GET",
+        "/users/{userid}/messages/{receiverid}",
+        GetUserMessagesByReceiverId,
+    },
+	Route{
+        "CreateUserActivity",
+        "POST",
+        "/users/{userid}/activities",
+        CreateUserActivity,
+    },
+	Route{
+        "GetUserActivity",
+        "GET",
+        "/users/{userid}/activities",
+        GetUserActivity,
     },
 }

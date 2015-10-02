@@ -8,6 +8,14 @@ type Activity struct{
 	DeviceType string
 	DeviceId string
 	IsLoggedIn bool
-	pushToken string
+	PushToken string
+	Timestamp int64
+}
+
+type ActivityRequest struct{
+	DeviceType string
+	DeviceId string
+	IsLoggedIn bool
+	PushToken string
 	Timestamp int64
 }

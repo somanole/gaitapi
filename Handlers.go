@@ -12,15 +12,24 @@ import (
 	"github.com/somanole/gaitapi/types"
 	"github.com/somanole/gaitapi/accelerationrepo"
 	"github.com/somanole/gaitapi/userrepo"
+	"github.com/somanole/gaitapi/matchrepo"
+	"github.com/somanole/gaitapi/messagerepo"
+	"github.com/somanole/gaitapi/activityrepo"
 	"github.com/somanole/gaitapi/services"
 )
 
 var accelerationRepo accelerationrepo.AccelerationRepo
 var userRepo userrepo.UserRepo
+var matchRepo matchrepo.MatchRepo
+var messageRepo messagerepo.MessageRepo
+var activityRepo activityrepo.ActivityRepo
 
 func init() {
 	accelerationRepo = accelerationrepo.New()
 	userRepo = userrepo.New()
+	matchRepo = matchrepo.New()
+	messageRepo = messagerepo.New()
+	activityRepo = activityrepo.New()
 }
 
 func Index(w http.ResponseWriter, r *http.Request) {
@@ -180,7 +189,7 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 		if err != nil{
 			if err.Error() == "not found" {
 					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-	    			w.WriteHeader(http.StatusNotFound)	
+	    			w.WriteHeader(http.StatusNotAcceptable)	
 			} else if err.Error() == "not uuid" {
 				w.Header().Set("Content-Type", "text/css; charset=UTF-8")
 	    		w.WriteHeader(http.StatusBadRequest)	
@@ -238,7 +247,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			if err.Error() == "not found" {
 				w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-		    	w.WriteHeader(http.StatusNotFound)	
+		    	w.WriteHeader(http.StatusNotAcceptable)	
 			} else if err.Error() == "not uuid" {
 					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
 		    		w.WriteHeader(http.StatusBadRequest)	
@@ -277,7 +286,7 @@ func GetUserByEmail(w http.ResponseWriter, r *http.Request) {
 		if err != nil{
 			if err.Error() == "not found" {
 					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-	    			w.WriteHeader(http.StatusNotFound)	
+	    			w.WriteHeader(http.StatusNotAcceptable)	
 			} else {
 				hasexploded = err.Error()
 			}		
@@ -314,7 +323,7 @@ func GetUserExtraInfo(w http.ResponseWriter, r *http.Request) {
 		if err != nil{
 			if err.Error() == "not found" {
 					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-	    			w.WriteHeader(http.StatusNotFound)	
+	    			w.WriteHeader(http.StatusNotAcceptable)	
 			} else if err.Error() == "not uuid" {
 				w.Header().Set("Content-Type", "text/css; charset=UTF-8")
 	    		w.WriteHeader(http.StatusBadRequest)	
@@ -336,6 +345,233 @@ func GetUserExtraInfo(w http.ResponseWriter, r *http.Request) {
 	
 	if hasexploded != "" {
 		log.Printf(fmt.Sprintf("GetUserExtraInfo - HasExploded! - Error: %v", hasexploded))
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
+func GetUserMatch(w http.ResponseWriter, r *http.Request) {
+	var hasexploded string
+	hasexploded = ""
+	
+	vars := mux.Vars(r)
+	userId := vars["userid"]
+	
+	if userId != "" {
+	    response, err := matchRepo.GetUserMatch(userId)
+		
+		if err != nil{
+			if err.Error() == "not found" {
+					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    			w.WriteHeader(http.StatusNoContent)	
+			} else if err.Error() == "not uuid" {
+				w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    		w.WriteHeader(http.StatusBadRequest)	
+			} else {
+				hasexploded = err.Error()
+			}		
+		} else {
+		    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		    w.WriteHeader(http.StatusOK)
+			
+		    if err := json.NewEncoder(w).Encode(response); err != nil {
+		        hasexploded = err.Error()
+		    }
+		}	
+	} else {
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+    	w.WriteHeader(http.StatusBadRequest)	
+	}
+	
+	if hasexploded != "" {
+		log.Printf(fmt.Sprintf("GetUserMatch - HasExploded! - Error: %v", hasexploded))
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
+func CreateMessage(w http.ResponseWriter, r *http.Request) {
+	var message types.MessageRequest
+	var hasexploded string
+	hasexploded = ""
+	
+	vars := mux.Vars(r)
+	userId := vars["userid"]
+	receiverId := vars["receiverid"]
+	
+	if userId != "" && receiverId != "" {
+		 body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+	
+	    if err != nil {
+	        hasexploded = err.Error()
+	    } else if err := r.Body.Close(); err != nil {
+	        hasexploded = err.Error()
+	    } else if err := json.Unmarshal(body, &message); err != nil {
+	        w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	        w.WriteHeader(422) // unprocessable entity
+	        if err := json.NewEncoder(w).Encode(err); err != nil {
+	            hasexploded = err.Error()
+	        }
+	    } else {
+			err := messageRepo.CreateMessage(userId, receiverId, message)
+		
+			if err != nil {
+				if err.Error() == "not found" {
+					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    			w.WriteHeader(http.StatusNotAcceptable)	
+				} else if err.Error() == "not uuid" {
+					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+		    		w.WriteHeader(http.StatusBadRequest)	
+				} else {
+					hasexploded = err.Error()
+				}		
+			} else {
+				w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		    	w.WriteHeader(http.StatusCreated)
+			}   
+		}
+	} else {
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+    	w.WriteHeader(http.StatusBadRequest)
+	}
+	
+	if hasexploded != "" {
+		log.Printf(fmt.Sprintf("CreateMessage - HasExploded! - Error: %v", hasexploded))
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    w.WriteHeader(http.StatusInternalServerError)	
+	}
+}
+
+func GetUserMessagesByReceiverId(w http.ResponseWriter, r *http.Request) {
+	var hasexploded string
+	hasexploded = ""
+	
+	vars := mux.Vars(r)
+	userId := vars["userid"]
+	receiverId := vars["receiverid"]
+	
+	if userId != "" && receiverId != "" {
+	    response, err := messageRepo.GetUserMessagesByReceiverId(userId, receiverId)
+		
+		if err != nil{
+			if err.Error() == "not found" {
+					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    			w.WriteHeader(http.StatusNotAcceptable)	
+			} else if err.Error() == "not uuid" {
+				w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    		w.WriteHeader(http.StatusBadRequest)	
+			} else {
+				hasexploded = err.Error()
+			}		
+		} else if response != nil {
+		    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		    w.WriteHeader(http.StatusOK)
+			
+		    if err := json.NewEncoder(w).Encode(response); err != nil {
+		        hasexploded = err.Error()
+		    }
+		} else {
+			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		    w.WriteHeader(http.StatusNoContent)
+		}	
+	} else {
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+    	w.WriteHeader(http.StatusBadRequest)	
+	}
+	
+	if hasexploded != "" {
+		log.Printf(fmt.Sprintf("GetUserMatch - HasExploded! - Error: %v", hasexploded))
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
+func CreateUserActivity(w http.ResponseWriter, r *http.Request) {
+	var activity types.ActivityRequest
+	var hasexploded string
+	hasexploded = ""
+	
+	vars := mux.Vars(r)
+	userId := vars["userid"]
+	
+	if userId != "" {
+		body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+	
+	    if err != nil {
+	        hasexploded = err.Error()
+	    } else if err := r.Body.Close(); err != nil {
+	        hasexploded = err.Error()
+	    } else if err := json.Unmarshal(body, &activity); err != nil {
+	        w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	        w.WriteHeader(422) // unprocessable entity
+	        if err := json.NewEncoder(w).Encode(err); err != nil {
+	            hasexploded = err.Error()
+	        }
+	    } else {
+			err := activityRepo.CreateUserActivity(userId, activity)
+		
+			if err != nil {
+				if err.Error() == "not found" {
+					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    			w.WriteHeader(http.StatusNotAcceptable)	
+				} else if err.Error() == "not uuid" {
+					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+		    		w.WriteHeader(http.StatusBadRequest)	
+				} else {
+					hasexploded = err.Error()
+				}		
+			} else {
+				w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		    	w.WriteHeader(http.StatusCreated)
+			}   
+		}
+	} else {
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+    	w.WriteHeader(http.StatusBadRequest)	
+	}
+	
+	if hasexploded != "" {
+		log.Printf(fmt.Sprintf("CreateUserActivity - HasExploded! - Error: %v", hasexploded))
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    w.WriteHeader(http.StatusInternalServerError)	
+	}
+}
+
+func GetUserActivity(w http.ResponseWriter, r *http.Request) {
+	var hasexploded string
+	hasexploded = ""
+	
+	vars := mux.Vars(r)
+	userId := vars["userid"]
+	
+	if userId != "" {
+	    response, err := activityRepo.GetUserActivity(userId)
+		
+		if err != nil{
+			if err.Error() == "not found" {
+					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    			w.WriteHeader(http.StatusNoContent)	
+			} else if err.Error() == "not uuid" {
+				w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    		w.WriteHeader(http.StatusBadRequest)	
+			} else {
+				hasexploded = err.Error()
+			}		
+		} else {
+		    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		    w.WriteHeader(http.StatusOK)
+			
+		    if err := json.NewEncoder(w).Encode(response); err != nil {
+		        hasexploded = err.Error()
+		    }
+		}	
+	} else {
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+    	w.WriteHeader(http.StatusBadRequest)	
+	}
+	
+	if hasexploded != "" {
+		log.Printf(fmt.Sprintf("GetUserActivity - HasExploded! - Error: %v", hasexploded))
 		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
 	    w.WriteHeader(http.StatusInternalServerError)
 	}
