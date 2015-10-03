@@ -453,12 +453,15 @@ func GetUserMessagesByReceiverId(w http.ResponseWriter, r *http.Request) {
 	var hasexploded string
 	hasexploded = ""
 	
+	startdate := r.URL.Query().Get("startdate")
+	log.Printf(fmt.Sprintf("GetUserMatch - startdate: %v", startdate))
+	
 	vars := mux.Vars(r)
 	userId := vars["userid"]
 	receiverId := vars["receiverid"]
 	
 	if userId != "" && receiverId != "" {
-	    response, err := messageRepo.GetUserMessagesByReceiverId(userId, receiverId)
+	    response, err := messageRepo.GetUserMessagesByReceiverId(userId, receiverId, startdate)
 		
 		if err != nil{
 			if err.Error() == "not found" {

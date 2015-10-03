@@ -7,7 +7,7 @@ import (
 
 type (
 	MessageRepo interface {
-		GetUserMessagesByReceiverId(userId string, receiverId string) (types.Messages, error)
+		GetUserMessagesByReceiverId(userId string, receiverId string, startdate string) (types.Messages, error)
 		CreateMessage(userId string, receiverId string, m types.MessageRequest) error
 	} 
 	

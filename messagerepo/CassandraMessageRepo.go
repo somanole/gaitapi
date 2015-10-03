@@ -77,7 +77,7 @@ func (repo *CassandraMessageRepo) CreateMessage(userId string, receiverId string
     return err
 }
 
-func (repo *CassandraMessageRepo) GetUserMessagesByReceiverId(userId string, receiverId string) (types.Messages, error) {
+func (repo *CassandraMessageRepo) GetUserMessagesByReceiverId(userId string, receiverId string, startdate string) (types.Messages, error) {
 	// get all messages for user
 	log.Printf(fmt.Sprintf("GetUserMessages - Received userId: %v", userId))
 	log.Printf(fmt.Sprintf("GetUserMessages - Received receiverId: %v", receiverId))
@@ -91,9 +91,17 @@ func (repo *CassandraMessageRepo) GetUserMessagesByReceiverId(userId string, rec
 		var text string
 		var is_read bool
 		var timestamp int64
+		var sql string
 		
-		sql := fmt.Sprintf(`SELECT message_id, sender_id, receiver_id, text, is_read, 
-		timestamp FROM messages WHERE sender_id = %v AND receiver_id = %v`, userId, receiverId)
+		if startdate != "" {
+			sql = fmt.Sprintf(`SELECT message_id, sender_id, receiver_id, text, is_read, 
+			timestamp FROM messages WHERE sender_id = %v AND receiver_id = %v AND timestamp >= %v`, userId, receiverId, startdate)
+		} else {
+			sql = fmt.Sprintf(`SELECT message_id, sender_id, receiver_id, text, is_read, 
+			timestamp FROM messages WHERE sender_id = %v AND receiver_id = %v`, userId, receiverId)
+		}
+		
+		log.Printf(sql)
 		
 		iter := session.Query(sql).Iter()
 		for iter.Scan(&message_id, &sender_id, &receiver_id, &text, &is_read, &timestamp) {
