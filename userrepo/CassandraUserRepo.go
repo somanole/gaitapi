@@ -37,15 +37,16 @@ func getCqlSession() *gocql.Session {
 	return s
 }
 
-func (repo *CassandraUserRepo) CreateUser(u types.User) (types.CreateUserResponse, error) {
+func (repo *CassandraUserRepo) CreateUser(ur types.UserRequest) (types.CreateUserResponse, error) {
     // insert user in users
+	var u types.User
 	var response types.CreateUserResponse
 	var existingEmail string
 	var err error
 	err = nil
 	existingEmail = ""
 	
-	sql := fmt.Sprintf("SELECT email FROM users_by_email WHERE email = '%v' LIMIT 1", u.Email)		
+	sql := fmt.Sprintf("SELECT email FROM users_by_email WHERE email = '%v' LIMIT 1", ur.Email)		
 	log.Printf(sql)
 	
 	if err = session.Query(sql).Scan(&existingEmail); err != nil {
@@ -56,6 +57,17 @@ func (repo *CassandraUserRepo) CreateUser(u types.User) (types.CreateUserRespons
 				u.UserId = uuid.NewRandom()
 				u.Username = "brown fox drinks wine"	
 				u.Timestamp = int64(time.Now().UTC().Unix())
+				u.DeviceType = ur.DeviceType
+				u.Email = ur.Email
+				u.FacebookAccessToken = ur.FacebookAccessToken
+				u.GenderPreference = ur.GenderPreference
+				u.GoogleAccessToken = ur.GoogleAccessToken
+				u.IsAnonymous = ur.IsAnonymous
+				u.IsTest = false
+				u.Password = ur.Password
+				u.PushTokenAndroid = ur.PushTokenAndroid
+				u.PushTokeniOS = ur.PushTokeniOS
+				u.TwitterAccessToken = ur.TwitterAccessToken
 				
 				sql = fmt.Sprintf(`INSERT INTO users (user_id, username, 
 				facebook_access_token, twitter_access_token, google_access_token, 
@@ -74,28 +86,29 @@ func (repo *CassandraUserRepo) CreateUser(u types.User) (types.CreateUserRespons
 				} else {
 					response.UserId = u.UserId
 					response.Username = u.Username
+					response.Timestamp = u.Timestamp
+					
+					sql = fmt.Sprintf("INSERT INTO users_by_email (email, user_id) VALUES ('%v', %v)", u.Email, u.UserId)
+				
+					log.Printf(sql)
+					if err = session.Query(sql).Exec(); err != nil {
+						log.Printf(fmt.Sprintf("CreateUser - Error: %v", err.Error()))
+					} 
+					
+					sql = fmt.Sprintf("INSERT INTO users_extra_info (user_id, walking_progress, timestamp) VALUES (%v, %v, %v)", u.UserId, 0, u.Timestamp)
+					
+					log.Printf(sql)
+					if err = session.Query(sql).Exec(); err != nil {
+						log.Printf(fmt.Sprintf("CreateUser - Error: %v", err.Error()))
+					} 
+					
+					sql = fmt.Sprintf("INSERT INTO users_by_id (user_id, email) VALUES (%v, '%v')", u.UserId, u.Email)
+					
+					log.Printf(sql)
+					if err = session.Query(sql).Exec(); err != nil {
+						log.Printf(fmt.Sprintf("CreateUser - Error: %v", err.Error()))
+					} 
 				}
-				
-				sql = fmt.Sprintf("INSERT INTO users_by_email (email, user_id) VALUES ('%v', %v)", u.Email, u.UserId)
-				
-				log.Printf(sql)
-				if err = session.Query(sql).Exec(); err != nil {
-					log.Printf(fmt.Sprintf("CreateUser - Error: %v", err.Error()))
-				} 
-				
-				sql = fmt.Sprintf("INSERT INTO users_extra_info (user_id, walking_progress, timestamp) VALUES (%v, %v, %v)", u.UserId, 0, u.Timestamp)
-				
-				log.Printf(sql)
-				if err = session.Query(sql).Exec(); err != nil {
-					log.Printf(fmt.Sprintf("CreateUser - Error: %v", err.Error()))
-				} 
-				
-				sql = fmt.Sprintf("INSERT INTO users_by_id (user_id, email) VALUES (%v, '%v')", u.UserId, u.Email)
-				
-				log.Printf(sql)
-				if err = session.Query(sql).Exec(); err != nil {
-					log.Printf(fmt.Sprintf("CreateUser - Error: %v", err.Error()))
-				} 
 			}
 	} else if existingEmail != "" {
 		err = errors.New("email already registered")
@@ -137,7 +150,7 @@ func (repo *CassandraUserRepo) GetUser(userId string) (types.User, error) {
 	return user, err
 }
 
-func (repo *CassandraUserRepo) UpdateUser(userId string, u types.User) (types.CreateUserResponse, error) {
+func (repo *CassandraUserRepo) UpdateUser(userId string, u types.UserUpdateRequest) (types.CreateUserResponse, error) {
     // insert user in users
 	log.Printf(fmt.Sprintf("UpdateUser - Received userId: %v", userId))
 	
@@ -207,6 +220,7 @@ func (repo *CassandraUserRepo) UpdateUser(userId string, u types.User) (types.Cr
 			} else {
 				response.UserId = user.UserId
 				response.Username = user.Username
+				response.Timestamp = user.Timestamp
 			}	
 		}
 	} else {

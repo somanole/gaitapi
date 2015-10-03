@@ -20,6 +20,31 @@ type User struct{
 	Timestamp int64
 }
 
+type UserRequest struct{
+	FacebookAccessToken string
+	TwitterAccessToken string
+	GoogleAccessToken string
+	PushTokeniOS string
+	PushTokenAndroid string
+	DeviceType string
+	Email string
+	Password string
+	IsAnonymous bool
+	GenderPreference string
+}
+
+type UserUpdateRequest struct{
+	FacebookAccessToken string
+	TwitterAccessToken string
+	GoogleAccessToken string
+	PushTokeniOS string
+	PushTokenAndroid string
+	DeviceType string
+	Password string
+	IsAnonymous bool
+	GenderPreference string
+}
+
 type UserByEmail struct{
 	Email string
 	UserId uuid.UUID
@@ -34,6 +59,7 @@ type UserExtraInfo struct{
 type CreateUserResponse struct{
 	UserId uuid.UUID
 	Username string
+	Timestamp int64
 }
 
 type GetUserResponse struct{

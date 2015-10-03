@@ -139,7 +139,7 @@ func GetAccessCode(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateUser(w http.ResponseWriter, r *http.Request) {
-	var user types.User
+	var user types.UserRequest
 	var hasexploded string
 	hasexploded = ""
 	
@@ -230,7 +230,7 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
-	var user types.User
+	var user types.UserUpdateRequest
 	var hasexploded string
 	hasexploded = ""
 	
