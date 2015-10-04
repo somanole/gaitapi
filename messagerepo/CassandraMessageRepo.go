@@ -9,7 +9,16 @@ import (
 	"github.com/somanole/gaitapi/types"
 	"github.com/gocql/gocql"
 	"code.google.com/p/go-uuid/uuid"
+	"sort"
 )
+
+// ByTimestamp implements sort.Interface for []Message based on
+// the Timestamp field.
+type ByTimestamp []types.Message
+
+func (a ByTimestamp) Len() int           { return len(a) }
+func (a ByTimestamp) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByTimestamp) Less(i, j int) bool { return a[i].Timestamp > a[j].Timestamp }
 
 type (
 	CassandraMessageRepo struct {}
@@ -93,6 +102,7 @@ func (repo *CassandraMessageRepo) GetUserMessagesByReceiverId(userId string, rec
 		var timestamp int64
 		var sql string
 		
+		//sender messages
 		if startdate != "" {
 			sql = fmt.Sprintf(`SELECT message_id, sender_id, receiver_id, text, is_read, 
 			timestamp FROM messages WHERE sender_id = %v AND receiver_id = %v AND timestamp >= %v`, userId, receiverId, startdate)
@@ -110,6 +120,30 @@ func (repo *CassandraMessageRepo) GetUserMessagesByReceiverId(userId string, rec
 		}
 		if err = iter.Close(); err != nil {
 			log.Printf(fmt.Sprintf("GetUserMessages - Error: %v", err.Error()))
+		}
+		
+		//receiver messages
+		if startdate != "" {
+			sql = fmt.Sprintf(`SELECT message_id, sender_id, receiver_id, text, is_read, 
+			timestamp FROM messages WHERE sender_id = %v AND receiver_id = %v AND timestamp >= %v`, receiverId, userId, startdate)
+		} else {
+			sql = fmt.Sprintf(`SELECT message_id, sender_id, receiver_id, text, is_read, 
+			timestamp FROM messages WHERE sender_id = %v AND receiver_id = %v`, receiverId, userId)
+		}
+		
+		log.Printf(sql)
+		
+		iter2 := session.Query(sql).Iter()
+		for iter2.Scan(&message_id, &sender_id, &receiver_id, &text, &is_read, &timestamp) {
+			messages = append(messages, types.Message{MessageId: uuid.Parse(message_id), SenderId: uuid.Parse(sender_id), 
+			ReceiverId: uuid.Parse(receiver_id), Text: text, IsRead: is_read, Timestamp: timestamp})
+		}
+		if err = iter2.Close(); err != nil {
+			log.Printf(fmt.Sprintf("GetUserMessages - Error: %v", err.Error()))
+		}
+		
+		if messages != nil {
+			sort.Sort(ByTimestamp(messages))
 		}
 	} else {
 		log.Printf(fmt.Sprintf("GetUserMatch - Received userId | receiverId : %v | %v is not UUID", userId, receiverId))

@@ -9,8 +9,7 @@ type User struct{
 	FacebookAccessToken string
 	TwitterAccessToken string
 	GoogleAccessToken string
-	PushTokeniOS string
-	PushTokenAndroid string
+	PushToken string
 	DeviceType string
 	Email string
 	Password string
@@ -24,8 +23,7 @@ type UserRequest struct{
 	FacebookAccessToken string
 	TwitterAccessToken string
 	GoogleAccessToken string
-	PushTokeniOS string
-	PushTokenAndroid string
+	PushToken string
 	DeviceType string
 	Email string
 	Password string
@@ -37,11 +35,9 @@ type UserUpdateRequest struct{
 	FacebookAccessToken string
 	TwitterAccessToken string
 	GoogleAccessToken string
-	PushTokeniOS string
-	PushTokenAndroid string
+	PushToken string
 	DeviceType string
 	Password string
-	IsAnonymous bool
 	GenderPreference string
 }
 

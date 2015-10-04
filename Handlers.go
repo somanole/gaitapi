@@ -625,3 +625,53 @@ func HelpPageGETAccelerationsCount(w http.ResponseWriter, r *http.Request) {
     body, _ := ioutil.ReadFile("helppage/GET-accelerations-count.html")
     fmt.Fprint(w, string(body))
 }
+
+func HelpPagePOSTUser(w http.ResponseWriter, r *http.Request) {
+    body, _ := ioutil.ReadFile("helppage/POST-user.html")
+    fmt.Fprint(w, string(body))
+}
+
+func HelpPagePUTUser(w http.ResponseWriter, r *http.Request) {
+    body, _ := ioutil.ReadFile("helppage/PUT-user.html")
+    fmt.Fprint(w, string(body))
+}
+
+func HelpPageGETUserId(w http.ResponseWriter, r *http.Request) {
+    body, _ := ioutil.ReadFile("helppage/GET-user-id.html")
+    fmt.Fprint(w, string(body))
+}
+
+func HelpPageGETUserEmail(w http.ResponseWriter, r *http.Request) {
+    body, _ := ioutil.ReadFile("helppage/GET-user-email.html")
+    fmt.Fprint(w, string(body))
+}
+
+func HelpPageGETExtraInfo(w http.ResponseWriter, r *http.Request) {
+    body, _ := ioutil.ReadFile("helppage/GET-extrainfo.html")
+    fmt.Fprint(w, string(body))
+}
+
+func HelpPageGETMatch(w http.ResponseWriter, r *http.Request) {
+    body, _ := ioutil.ReadFile("helppage/GET-match.html")
+    fmt.Fprint(w, string(body))
+}
+
+func HelpPagePOSTMessage(w http.ResponseWriter, r *http.Request) {
+    body, _ := ioutil.ReadFile("helppage/POST-message.html")
+    fmt.Fprint(w, string(body))
+}
+
+func HelpPageGETMessage(w http.ResponseWriter, r *http.Request) {
+    body, _ := ioutil.ReadFile("helppage/GET-message.html")
+    fmt.Fprint(w, string(body))
+}
+
+func HelpPagePOSTActivity(w http.ResponseWriter, r *http.Request) {
+    body, _ := ioutil.ReadFile("helppage/POST-activity.html")
+    fmt.Fprint(w, string(body))
+}
+
+func HelpPageGETActivity(w http.ResponseWriter, r *http.Request) {
+    body, _ := ioutil.ReadFile("helppage/GET-activity.html")
+    fmt.Fprint(w, string(body))
+}

@@ -43,73 +43,78 @@ func (repo *CassandraUserRepo) CreateUser(ur types.UserRequest) (types.CreateUse
 	var response types.CreateUserResponse
 	var existingEmail string
 	var err error
+	var sql string
 	err = nil
 	existingEmail = ""
 	
-	sql := fmt.Sprintf("SELECT email FROM users_by_email WHERE email = '%v' LIMIT 1", ur.Email)		
-	log.Printf(sql)
+	if (!ur.IsAnonymous) {
+		sql = fmt.Sprintf("SELECT email FROM users_by_email WHERE email = '%v' LIMIT 1", ur.Email)		
+		log.Printf(sql)
 	
-	if err = session.Query(sql).Scan(&existingEmail); err != nil {
+		if err = session.Query(sql).Scan(&existingEmail); err != nil {
 			log.Printf(fmt.Sprintf("CreateUser - Error: %v", err.Error()))
-			if err.Error() == "not found" {
-				err = nil
+		}
+	}
+	
+	if (ur.IsAnonymous || (!ur.IsAnonymous && err != nil && err.Error() == "not found")) {
+		err = nil
 				
-				u.UserId = uuid.NewRandom()
-				u.Username = "brown fox drinks wine"	
-				u.Timestamp = int64(time.Now().UTC().Unix())
-				u.DeviceType = ur.DeviceType
-				u.Email = ur.Email
-				u.FacebookAccessToken = ur.FacebookAccessToken
-				u.GenderPreference = ur.GenderPreference
-				u.GoogleAccessToken = ur.GoogleAccessToken
-				u.IsAnonymous = ur.IsAnonymous
-				u.IsTest = false
-				u.Password = ur.Password
-				u.PushTokenAndroid = ur.PushTokenAndroid
-				u.PushTokeniOS = ur.PushTokeniOS
-				u.TwitterAccessToken = ur.TwitterAccessToken
+		u.UserId = uuid.NewRandom()
+		u.Username = "brown fox drinks wine"	
+		u.Timestamp = int64(time.Now().UTC().Unix())
+		u.DeviceType = ur.DeviceType
+		u.Email = ur.Email
+		u.FacebookAccessToken = ur.FacebookAccessToken
+		u.GenderPreference = ur.GenderPreference
+		u.GoogleAccessToken = ur.GoogleAccessToken
+		u.IsAnonymous = ur.IsAnonymous
+		u.IsTest = false
+		u.Password = ur.Password
+		u.PushToken = ur.PushToken
+		u.TwitterAccessToken = ur.TwitterAccessToken
 				
-				sql = fmt.Sprintf(`INSERT INTO users (user_id, username, 
-				facebook_access_token, twitter_access_token, google_access_token, 
-				push_token_ios, push_token_android, device_type, email, password, is_test,
-				is_anonymous, gender_preference, timestamp) 
-				VALUES (%v, '%v', '%v', '%v', '%v', '%v', '%v', '%v', '%v', '%v', %v, %v,
-				'%v', %v)`, 
-				u.UserId, u.Username, u.FacebookAccessToken, u.TwitterAccessToken, 
-				u.GoogleAccessToken, u.PushTokeniOS, u.PushTokenAndroid, u.DeviceType, 
-				u.Email, u.Password, u.IsTest, u.IsAnonymous, u.GenderPreference, 
-				u.Timestamp)
+		sql = fmt.Sprintf(`INSERT INTO users (user_id, username, 
+		facebook_access_token, twitter_access_token, google_access_token, 
+		push_token, device_type, email, password, is_test,
+		is_anonymous, gender_preference, timestamp) 
+		VALUES (%v, '%v', '%v', '%v', '%v', '%v', '%v', '%v', '%v', %v, %v,
+		'%v', %v)`, 
+		u.UserId, u.Username, u.FacebookAccessToken, u.TwitterAccessToken, 
+		u.GoogleAccessToken, u.PushToken, u.DeviceType, 
+		u.Email, u.Password, u.IsTest, u.IsAnonymous, u.GenderPreference, 
+		u.Timestamp)
+				
+		log.Printf(sql)
+		if err = session.Query(sql).Exec(); err != nil {
+			log.Printf(fmt.Sprintf("CreateUser - Error: %v", err.Error()))
+		} else {
+			response.UserId = u.UserId
+			response.Username = u.Username
+			response.Timestamp = u.Timestamp
+			
+			if (!u.IsAnonymous)	{
+				sql = fmt.Sprintf("INSERT INTO users_by_email (email, user_id) VALUES ('%v', %v)", u.Email, u.UserId)
 				
 				log.Printf(sql)
 				if err = session.Query(sql).Exec(); err != nil {
 					log.Printf(fmt.Sprintf("CreateUser - Error: %v", err.Error()))
-				} else {
-					response.UserId = u.UserId
-					response.Username = u.Username
-					response.Timestamp = u.Timestamp
-					
-					sql = fmt.Sprintf("INSERT INTO users_by_email (email, user_id) VALUES ('%v', %v)", u.Email, u.UserId)
+				} 
+			}	
 				
-					log.Printf(sql)
-					if err = session.Query(sql).Exec(); err != nil {
-						log.Printf(fmt.Sprintf("CreateUser - Error: %v", err.Error()))
-					} 
+			sql = fmt.Sprintf("INSERT INTO users_extra_info (user_id, walking_progress, timestamp) VALUES (%v, %v, %v)", u.UserId, 0, u.Timestamp)
 					
-					sql = fmt.Sprintf("INSERT INTO users_extra_info (user_id, walking_progress, timestamp) VALUES (%v, %v, %v)", u.UserId, 0, u.Timestamp)
+			log.Printf(sql)
+			if err = session.Query(sql).Exec(); err != nil {
+				log.Printf(fmt.Sprintf("CreateUser - Error: %v", err.Error()))
+			} 
 					
-					log.Printf(sql)
-					if err = session.Query(sql).Exec(); err != nil {
-						log.Printf(fmt.Sprintf("CreateUser - Error: %v", err.Error()))
-					} 
+			sql = fmt.Sprintf("INSERT INTO users_by_id (user_id, email) VALUES (%v, '%v')", u.UserId, u.Email)
 					
-					sql = fmt.Sprintf("INSERT INTO users_by_id (user_id, email) VALUES (%v, '%v')", u.UserId, u.Email)
-					
-					log.Printf(sql)
-					if err = session.Query(sql).Exec(); err != nil {
-						log.Printf(fmt.Sprintf("CreateUser - Error: %v", err.Error()))
-					} 
-				}
-			}
+			log.Printf(sql)
+			if err = session.Query(sql).Exec(); err != nil {
+				log.Printf(fmt.Sprintf("CreateUser - Error: %v", err.Error()))
+			} 
+		}
 	} else if existingEmail != "" {
 		err = errors.New("email already registered")
 	} 
@@ -128,7 +133,7 @@ func (repo *CassandraUserRepo) GetUser(userId string) (types.User, error) {
 	
 	if uuid.Parse(userId) != nil {
 		sql := fmt.Sprintf(`SELECT user_id, username, facebook_access_token, 
-		twitter_access_token, google_access_token, push_token_ios, push_token_android, 
+		twitter_access_token, google_access_token, push_token, 
 		device_type, email, password, is_test, is_anonymous, gender_preference, 
 		timestamp FROM users WHERE user_id = %v LIMIT 1`, userId)
 		
@@ -136,7 +141,7 @@ func (repo *CassandraUserRepo) GetUser(userId string) (types.User, error) {
 		
 		if err = session.Query(sql).Scan(&user_id, 
 			&user.Username, &user.FacebookAccessToken, &user.TwitterAccessToken, &user.GoogleAccessToken,
-			&user.PushTokeniOS, &user.PushTokenAndroid, &user.DeviceType, &user.Email,
+			&user.PushToken, &user.DeviceType, &user.Email,
 			&user.Password, &user.IsTest, &user.IsAnonymous, &user.GenderPreference, &user.Timestamp); err != nil {
 				log.Printf(fmt.Sprintf("GetUser - Error: %v", err.Error()))
 		} else {
@@ -163,7 +168,7 @@ func (repo *CassandraUserRepo) UpdateUser(userId string, u types.UserUpdateReque
 		var user_id string
 		
 		sql := fmt.Sprintf(`SELECT user_id, username, facebook_access_token, 
-		twitter_access_token, google_access_token, push_token_ios, push_token_android, 
+		twitter_access_token, google_access_token, push_token, 
 		device_type, email, password, is_test, is_anonymous, gender_preference, 
 		timestamp FROM users WHERE user_id = %v LIMIT 1`, userId)
 		
@@ -171,7 +176,7 @@ func (repo *CassandraUserRepo) UpdateUser(userId string, u types.UserUpdateReque
 		
 		if err = session.Query(sql).Scan(&user_id, 
 			&user.Username, &user.FacebookAccessToken, &user.TwitterAccessToken, &user.GoogleAccessToken,
-			&user.PushTokeniOS, &user.PushTokenAndroid, &user.DeviceType, &user.Email,
+			&user.PushToken, &user.DeviceType, &user.Email,
 			&user.Password, &user.IsTest, &user.IsAnonymous, &user.GenderPreference, &user.Timestamp); err != nil {
 				log.Printf(fmt.Sprintf("UpdateUser - Error: %v", err.Error()))
 		} else {
@@ -193,11 +198,8 @@ func (repo *CassandraUserRepo) UpdateUser(userId string, u types.UserUpdateReque
 			if u.Password != "" {
 				user.Password = u.Password
 			}
-			if u.PushTokenAndroid != "" {
-				user.PushTokenAndroid = u.PushTokenAndroid
-			}
-			if u.PushTokeniOS != "" {
-				user.PushTokeniOS = u.PushTokenAndroid
+			if u.PushToken != "" {
+				user.PushToken = u.PushToken
 			}
 			if u.TwitterAccessToken != "" {
 				user.TwitterAccessToken = u.TwitterAccessToken
@@ -205,12 +207,12 @@ func (repo *CassandraUserRepo) UpdateUser(userId string, u types.UserUpdateReque
 			
 			sql := fmt.Sprintf(`INSERT INTO users (user_id, username, 
 			facebook_access_token, twitter_access_token, google_access_token, 
-			push_token_ios, push_token_android, device_type, email, password, is_test,
+			push_token, device_type, email, password, is_test,
 			is_anonymous, gender_preference, timestamp) 
-			VALUES (%v, '%v', '%v', '%v', '%v', '%v', '%v', '%v', '%v', '%v', %v, %v,
+			VALUES (%v, '%v', '%v', '%v', '%v', '%v', '%v', '%v', '%v', %v, %v,
 			'%v', %v)`, 
 			user.UserId, user.Username, user.FacebookAccessToken, user.TwitterAccessToken, 
-			user.GoogleAccessToken, user.PushTokeniOS, user.PushTokenAndroid, user.DeviceType, 
+			user.GoogleAccessToken, user.PushToken, user.DeviceType, 
 			user.Email, user.Password, user.IsTest, user.IsAnonymous, user.GenderPreference, 
 			user.Timestamp)
 				
