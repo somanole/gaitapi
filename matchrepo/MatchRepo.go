@@ -7,6 +7,7 @@ import (
 
 type (
 	MatchRepo interface {
+		CreateMatch(userId string, matchedUserId string) error
 		GetUserMatch(userId string) (types.Match, error)
 	}
 	

@@ -7,10 +7,10 @@ type Match struct{
 	UserId uuid.UUID
 	MatchedUserId uuid.UUID
 	MatchedUsername string
-	IsMatchActive bool
-	IsChatActive bool
 	Timestamp int64
 }
+
+type Matches []Match
 
 type MatchGroup struct{
 	Groupname string
