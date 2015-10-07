@@ -28,6 +28,9 @@
 
     <h2>Request Information</h2>
 
+    <h3>Header Parameters</h3>
+    <p>key - is the password of the user associated with the {userid}</p>
+
     <h3>URI Parameters</h3>
         <p>{userid} - is the id of the user that is sending the message</p>
         <p>{receiverid} - is the id of the user that is receiving the message</p>
@@ -155,6 +158,7 @@
     <p>200 Status OK - for success</p>
     <p>204 No Content - no messages found in the chat on the server</p>
     <p>400 Bad Request - when the userid provided in the url is missing or is not in UUID format</p>
+    <p>401 Unauthorized - when the credentials provided are not associated with any user on the server</p>
     <p>422 Unprocessable Entity - when the request object is not in the right format</p>   
     <p>500 Internal Server Error - for unexpected errors</p>
 

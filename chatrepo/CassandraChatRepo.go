@@ -2,12 +2,10 @@
 package chatrepo
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"time"
 	"github.com/somanole/gaitapi/types"
-	"github.com/somanole/gaitapi/utilsrepo"
 	"github.com/gocql/gocql"
 	"code.google.com/p/go-uuid/uuid"
 	"sort"
@@ -31,11 +29,8 @@ func NewCassandraChatRepo() ChatRepo {
 	return &CassandraChatRepo{}
 }
 
-var utilsRepo utilsrepo.UtilsRepo
-
 func init() {
 	New = NewCassandraChatRepo
-	utilsRepo = utilsrepo.New()
 }
 
 func getCqlSession() *gocql.Session {
@@ -48,40 +43,60 @@ func getCqlSession() *gocql.Session {
 	return s
 }
 
+func (repo *CassandraChatRepo) CreateChat(c types.Chat) error {
+	//insert chat in chats
+	
+	var err error
+	err = nil
+	
+	sql := fmt.Sprintf(`INSERT INTO chats (sender_id, receiver_id, 
+	is_chat_active, is_chat_blocked_by_sender, is_chat_blocked_by_receiver, receiver_username, 
+	last_message, timestamp) VALUES (%v, %v, %v, %v, %v, '%v', '%v', %v)`, 
+	c.SenderId, c.ReceiverId, c.IsChatActive, c.IsChatBlockedBySender, c.IsChatBlockedByReceiver, c.ReceiverUsername, c.LastMessage, c.Timestamp)
+						
+	log.Printf(sql)
+	
+	if err = session.Query(sql).Exec(); err != nil {
+		log.Printf(fmt.Sprintf("CassandraChatRepo.CreateChat() - Error: %v", err.Error()))
+	} 
+	
+    return err
+}
+
 func (repo *CassandraChatRepo) GetUserActiveChats(userId string) (types.Chats, error) {
 	// get active chats for user by id
-	log.Printf(fmt.Sprintf("GetUserActiveChats - Received userId: %v", userId))
+	log.Printf(fmt.Sprintf("CassandraChatRepo.GetUserActiveChats() - Received userId: %v", userId))
 	
 	var chats types.Chats
 	var err error
 	err = nil
 	
-	if uuid.Parse(userId) != nil {
-		var sender_id, receiver_id, receiver_username string
-		var is_chat_active, is_chat_blocked bool
-		var timestamp int64
+	var sender_id, receiver_id, receiver_username, last_message string
+	var is_chat_active, is_chat_blocked_by_sender, is_chat_blocked_by_receiver  bool
+	var timestamp int64
 			
-		sql := fmt.Sprintf(`SELECT sender_id, receiver_id, receiver_username, 
-		is_chat_active, is_chat_blocked, timestamp 
-		FROM chats WHERE user_id = %v`, userId)
+	sql := fmt.Sprintf(`SELECT sender_id, receiver_id, receiver_username, 
+	is_chat_active, is_chat_blocked_by_sender, is_chat_blocked_by_receiver, last_message, timestamp 
+	FROM chats WHERE sender_id = %v`, userId)
 			
-		log.Printf(sql)
+	log.Printf(sql)
 			
-		iter := session.Query(sql).Iter()
-		for iter.Scan(&user_id, &matched_user_id, &matched_username,
-		&is_match_active, &is_chat_active, &is_chat_blocked, &timestamp) {
-			if is_chat_active {
-				chats = append(chats, types.Chat{UserId: uuid.Parse(user_id), MatchedUserId: uuid.Parse(matched_user_id), 
-				MatchedUserName: matched_username, IsMatchActive: is_match_active, IsChatActive: is_chat_active,
-				IsChatBlocked: is_chat_blocked Timestamp: timestamp})
-			}
+	iter := session.Query(sql).Iter()
+	for iter.Scan(&sender_id, &receiver_id, &receiver_username,
+	&is_chat_active, &is_chat_blocked_by_sender, &is_chat_blocked_by_receiver, &last_message, &timestamp) {
+		if is_chat_active {
+			chats = append(chats, types.Chat{SenderId: uuid.Parse(sender_id), ReceiverId: uuid.Parse(receiver_id), 
+			ReceiverUsername: receiver_username, IsChatActive: is_chat_active,
+			IsChatBlockedBySender: is_chat_blocked_by_sender, IsChatBlockedByReceiver: is_chat_blocked_by_receiver,
+			LastMessage: last_message, Timestamp: timestamp})
 		}
-		if err = iter.Close(); err != nil {
-			log.Printf(fmt.Sprintf("GetUserActiveChats - Error: %v", err.Error()))
-		}
-	} else {
-		log.Printf(fmt.Sprintf("GetUserMatch - Received userId: %v is not UUID", userId))
-		err = errors.New("not uuid")
+	}
+	if err = iter.Close(); err != nil {
+		log.Printf(fmt.Sprintf("CassandraChatRepo.GetUserActiveChats() - Error: %v", err.Error()))
+	}
+		
+	if chats != nil {
+		sort.Sort(ByTimestamp(chats))
 	}
 	
 	return chats, err
@@ -89,100 +104,96 @@ func (repo *CassandraChatRepo) GetUserActiveChats(userId string) (types.Chats, e
 
 func (repo *CassandraChatRepo) BlockChat(senderId string, receiverId string) error {
     // block chat in chats
-	var m types.Match
 	var err error
-	var receiverUsername string
 	err = nil
 	
-	err = utilsRepo.CheckIfUserExists(senderId)
-	
-	if err == nil {
-		err = utilsRepo.CheckIfUserExists(receiverId)
-	}
-
-	if err == nil {
-		timestamp := int64(time.Now().UTC().Unix())
+	timestamp := int64(time.Now().UTC().Unix())
 			
-		sql := fmt.Sprintf(`UPDATE chats SET is_chat_blocked_by_sender = true, timestamp = %v WHERE sender_id = %v
-		AND receiver_id = %v`, timestamp, senderId, receiverId)
+	sql := fmt.Sprintf(`UPDATE chats SET is_chat_blocked_by_sender = true, timestamp = %v WHERE sender_id = %v
+	AND receiver_id = %v`, timestamp, senderId, receiverId)
 						
-		log.Printf(sql)
-		if err = session.Query(sql).Exec(); err != nil {
-			log.Printf(fmt.Sprintf("BlockChat - Error: %v", err.Error()))
-		} 
+	log.Printf(sql)
+	if err = session.Query(sql).Exec(); err != nil {
+		log.Printf(fmt.Sprintf("CassandraChatRepo.BlockChat() - Error: %v", err.Error()))
+	} 
 		
-		sql = fmt.Sprintf(`UPDATE chats SET is_chat_blocked_by_receiver = true, timestamp = %v WHERE sender_id = %v
-		AND receiver_id = %v`, timestamp, receiverId, senderId)
+	sql = fmt.Sprintf(`UPDATE chats SET is_chat_blocked_by_receiver = true, timestamp = %v WHERE sender_id = %v
+	AND receiver_id = %v`, timestamp, receiverId, senderId)
 						
-		log.Printf(sql)
-		if err = session.Query(sql).Exec(); err != nil {
-			log.Printf(fmt.Sprintf("BlockChat - Error: %v", err.Error()))
-		} 
-	}
+	log.Printf(sql)
+	if err = session.Query(sql).Exec(); err != nil {
+		log.Printf(fmt.Sprintf("CassandraChatRepo.BlockChat() - Error: %v", err.Error()))
+	} 
 
     return err
 }
 
 func (repo *CassandraChatRepo) UnblockChat(senderId string, receiverId string) error {
     // unblock chat in chats
-	var m types.Match
 	var err error
-	var receiverUsername string
 	err = nil
 	
-	err = utilsRepo.CheckIfUserExists(senderId)
-	
-	if err == nil {
-		err = utilsRepo.CheckIfUserExists(receiverId)
-	}
-
-	if err == nil {
-		timestamp := int64(time.Now().UTC().Unix())
+	timestamp := int64(time.Now().UTC().Unix())
 			
-		sql := fmt.Sprintf(`UPDATE chats SET is_chat_blocked_by_sender = false, timestamp = %v WHERE sender_id = %v
-		AND receiver_id = %v`, timestamp, senderId, receiverId)
+	sql := fmt.Sprintf(`UPDATE chats SET is_chat_blocked_by_sender = false, timestamp = %v WHERE sender_id = %v
+	AND receiver_id = %v`, timestamp, senderId, receiverId)
 						
-		log.Printf(sql)
-		if err = session.Query(sql).Exec(); err != nil {
-			log.Printf(fmt.Sprintf("UnblockChat - Error: %v", err.Error()))
-		} 
+	log.Printf(sql)
+	if err = session.Query(sql).Exec(); err != nil {
+		log.Printf(fmt.Sprintf("CassandraChatRepo.UnblockChat() - Error: %v", err.Error()))
+	} 
 		
-		sql = fmt.Sprintf(`UPDATE chats SET is_chat_blocked_by_receiver = false, timestamp = %v WHERE sender_id = %v
-		AND receiver_id = %v`, timestamp, receiverId, senderId)
+	sql = fmt.Sprintf(`UPDATE chats SET is_chat_blocked_by_receiver = false, timestamp = %v WHERE sender_id = %v
+	AND receiver_id = %v`, timestamp, receiverId, senderId)
 						
-		log.Printf(sql)
-		if err = session.Query(sql).Exec(); err != nil {
-			log.Printf(fmt.Sprintf("UnblockChat - Error: %v", err.Error()))
-		} 
-	}
+	log.Printf(sql)
+	if err = session.Query(sql).Exec(); err != nil {
+		log.Printf(fmt.Sprintf("CassandraChatRepo.UnblockChat() - Error: %v", err.Error()))
+	} 
 
     return err
 }
 
 func (repo *CassandraChatRepo) DeleteChat(senderId string, receiverId string) error {
     // delete chat in chats
-	var m types.Match
 	var err error
-	var receiverUsername string
 	err = nil
 	
-	err = utilsRepo.CheckIfUserExists(senderId)
-	
-	if err == nil {
-		err = utilsRepo.CheckIfUserExists(receiverId)
-	}
-
-	if err == nil {
-		timestamp := int64(time.Now().UTC().Unix())
+	timestamp := int64(time.Now().UTC().Unix())
 			
-		sql := fmt.Sprintf(`UPDATE chats SET is_chat_active = false, timestamp = %v WHERE sender_id = %v
-		AND receiver_id = %v`, timestamp, senderId, receiverId)
+	sql := fmt.Sprintf(`UPDATE chats SET is_chat_active = false, timestamp = %v WHERE sender_id = %v
+	AND receiver_id = %v`, timestamp, senderId, receiverId)
 						
-		log.Printf(sql)
-		if err = session.Query(sql).Exec(); err != nil {
-			log.Printf(fmt.Sprintf("DeleteChat - Error: %v", err.Error()))
-		} 
-	}
+	log.Printf(sql)
+	if err = session.Query(sql).Exec(); err != nil {
+		log.Printf(fmt.Sprintf("CassandraChatRepo.DeleteChat() - Error: %v", err.Error()))
+	} 
+
+    return err
+}
+
+func (repo *CassandraChatRepo) UpdateLastMessageChat(senderId string, receiverId string, message string) error {
+    // update last message in chat
+	var err error
+	err = nil
+	
+	timestamp := int64(time.Now().UTC().Unix())
+			
+	sql := fmt.Sprintf(`UPDATE chats SET last_message = '%v', timestamp = %v WHERE sender_id = %v
+	AND receiver_id = %v`, message, timestamp, senderId, receiverId)
+						
+	log.Printf(sql)
+	if err = session.Query(sql).Exec(); err != nil {
+		log.Printf(fmt.Sprintf("CassandraChatRepo.UpdateLastMessageChat() - Error: %v", err.Error()))
+	} 
+		
+	sql = fmt.Sprintf(`UPDATE chats SET last_message = '%v', timestamp = %v WHERE sender_id = %v
+	AND receiver_id = %v`, message, timestamp, receiverId, senderId)
+						
+	log.Printf(sql)
+	if err = session.Query(sql).Exec(); err != nil {
+		log.Printf(fmt.Sprintf("CassandraChatRepo.UpdateLastMessageChat() - Error: %v", err.Error()))
+	} 
 
     return err
 }

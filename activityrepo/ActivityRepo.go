@@ -7,7 +7,7 @@ import (
 
 type (
 	ActivityRepo interface {
-		CreateUserActivity(userId string, a types.ActivityRequest) error
+		CreateUserActivity(a types.Activity) error
 		GetUserActivity(userId string) (types.Activity, error)
 	}
 	

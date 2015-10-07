@@ -28,6 +28,9 @@
 
     <h2>Request Information</h2>
 
+    <h3>Header Parameters</h3>
+    <p>key - is the password of the user associated with the {userid}</p>
+
     <h3>URI Parameters</h3>
         <p>{userid} - is the id of the user that is being retrieved</p>
         <p>Example: GET http://api.gait.io/users/b50b2fdf-d4af-4938-91ce-f97fddfb3b55/match</p>
@@ -81,28 +84,6 @@
                     </td>
                 </tr>
                 <tr>
-                    <td class="parameter-name">IsMatchActive</td>
-                    <td class="parameter-documentation">
-                        <p>This is a flag that indicates if the match is active.</p>
-                    </td>
-                    <td class="parameter-type">
-                        bool
-                    </td>
-                    <td class="parameter-annotations">
-                    </td>
-                </tr>
-                <tr>
-                    <td class="parameter-name">IsChatActive</td>
-                    <td class="parameter-documentation">
-                        <p>This is a flag that indicates if the chat is active.</p>
-                    </td>
-                    <td class="parameter-type">
-                        bool
-                    </td>
-                    <td class="parameter-annotations">
-                    </td>
-                </tr>
-                <tr>
                     <td class="parameter-name">Timestamp</td>
                     <td class="parameter-documentation">
                         <p>This is the timestamp from the server in Unix format.</p>
@@ -125,10 +106,8 @@
             <pre class="wrapped">
             {
                 "UserId":"b50b2fdf-d4af-4938-91ce-f97fddfb3b55",
-                "MatchedUserId":"b50b2fdf-d4af-4938-91ce-f97fddfb3b56",
+                "MatchedUserId":"a20b2fdf-d4af-4938-91ce-f97fddfb3b56",
                 "MatchedUsername":"me mo mi me",
-                "IsMatchActive":true,
-                "IsChatActive":true,
                 "Timestamp":1443694439
             }
             </pre>
@@ -140,6 +119,7 @@
     <p>200 Status OK - for success</p>
     <p>204 No Content - when there is no match found on the server</p>
     <p>400 Bad Request - when the userid provided in the url is missing or is not in UUID format</p>
+    <p>401 Unauthorized - when the credentials provided are not associated with any user on the server</p>
     <p>422 Unprocessable Entity - when the request object is not in the right format</p>   
     <p>500 Internal Server Error - for unexpected errors</p>
 

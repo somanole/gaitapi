@@ -44,7 +44,7 @@ func (repo *CassandraAccelerationRepo) CreateAcceleration(userId string, ar type
 	err = nil
 	
 	if uuid.Parse(userId) != nil {
-		sql := fmt.Sprintf(`SELECT email from users_by_id WHERE user_id = %v LIMIT 1`, userId)
+		sql := fmt.Sprintf(`SELECT email from users WHERE user_id = %v LIMIT 1`, userId)
 		
 		log.Printf(sql)
 		var email string

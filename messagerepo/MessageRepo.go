@@ -8,7 +8,7 @@ import (
 type (
 	MessageRepo interface {
 		GetUserMessagesByReceiverId(userId string, receiverId string, startdate string) (types.Messages, error)
-		CreateMessage(userId string, receiverId string, m types.MessageRequest) error
+		CreateMessage(m types.Message) error
 	} 
 	
 	repoFactory func() MessageRepo

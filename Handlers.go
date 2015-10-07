@@ -12,24 +12,21 @@ import (
 	"github.com/somanole/gaitapi/types"
 	"github.com/somanole/gaitapi/accelerationrepo"
 	"github.com/somanole/gaitapi/userrepo"
-	"github.com/somanole/gaitapi/matchrepo"
-	"github.com/somanole/gaitapi/messagerepo"
-	"github.com/somanole/gaitapi/activityrepo"
-	"github.com/somanole/gaitapi/services"
+	"github.com/somanole/gaitapi/matchservice"
+	"github.com/somanole/gaitapi/messageservice"
+	"github.com/somanole/gaitapi/accesscodeservice"
+	"github.com/somanole/gaitapi/activityservice"
+	"github.com/somanole/gaitapi/userservice"
+	"github.com/somanole/gaitapi/chatservice"
+	"github.com/somanole/gaitapi/utilsservice"
 )
 
 var accelerationRepo accelerationrepo.AccelerationRepo
 var userRepo userrepo.UserRepo
-var matchRepo matchrepo.MatchRepo
-var messageRepo messagerepo.MessageRepo
-var activityRepo activityrepo.ActivityRepo
 
 func init() {
 	accelerationRepo = accelerationrepo.New()
 	userRepo = userrepo.New()
-	matchRepo = matchrepo.New()
-	messageRepo = messagerepo.New()
-	activityRepo = activityrepo.New()
 }
 
 func Index(w http.ResponseWriter, r *http.Request) {
@@ -44,45 +41,52 @@ func CreateUserAcceleration(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	userId := vars["userid"]
 	
-	log.Printf(fmt.Sprintf("CreateUserAcceleration - Received userId: %v", userId))
+	password := r.Header.Get("key")
 	
-	if userId != "" {
-		 body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
-	
-	    if err != nil {
-	        hasexploded = err.Error()
-	    } else if err := r.Body.Close(); err != nil {
-	        hasexploded = err.Error()
-	    } else if err := json.Unmarshal(body, &acceleration); err != nil {
-	        w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	        w.WriteHeader(422) // unprocessable entity
-			
-	        if err := json.NewEncoder(w).Encode(err); err != nil {
-	            hasexploded = err.Error()
-	        }
-	    } else {
-			err := accelerationRepo.CreateAcceleration(userId, acceleration)
-	    	
-			if err != nil {
-				if err.Error() == "not found" {
-					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-	    			w.WriteHeader(http.StatusNotAcceptable)	
-				} else if err.Error() == "not uuid" {
-					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-		    		w.WriteHeader(http.StatusBadRequest)	
+	if err := utilsservice.CheckUserPassword(userId, password); err == nil {
+			if userId != "" {
+			body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+		
+		    if err != nil {
+		        hasexploded = err.Error()
+		    } else if err := r.Body.Close(); err != nil {
+		        hasexploded = err.Error()
+		    } else if err := json.Unmarshal(body, &acceleration); err != nil {
+		        w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		        w.WriteHeader(422) // unprocessable entity
+				
+		        if err := json.NewEncoder(w).Encode(err); err != nil {
+		            hasexploded = err.Error()
+		        }
+		    } else {
+				err := accelerationRepo.CreateAcceleration(userId, acceleration)
+		    	
+				if err != nil {
+					if err.Error() == "not found" {
+						w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+		    			w.WriteHeader(http.StatusNotAcceptable)	
+					} else if err.Error() == "not uuid" {
+						w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+			    		w.WriteHeader(http.StatusBadRequest)	
+					} else {
+						hasexploded = err.Error()
+					}		
 				} else {
-					hasexploded = err.Error()
-				}		
-			} else {
-				w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		    	w.WriteHeader(http.StatusCreated)
-			}   
+					w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+			    	w.WriteHeader(http.StatusCreated)
+				}   
+			}
+		} else {
+			w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    	w.WriteHeader(http.StatusBadRequest)
 		}
-	} else {
+	} else if err.Error() == "401" || err.Error() == "not found" {
 		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-    	w.WriteHeader(http.StatusBadRequest)
+	    w.WriteHeader(http.StatusUnauthorized)
+	} else {
+		hasexploded = err.Error()
 	}
-	
+
 	if hasexploded != "" {
 		log.Printf(fmt.Sprintf("AccelerationCreate - HasExploded! - Error: %v", hasexploded))
 		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
@@ -91,7 +95,7 @@ func CreateUserAcceleration(w http.ResponseWriter, r *http.Request) {
 }
 
 func ValidateAccessCode(w http.ResponseWriter, r *http.Request) {
-    var accessCode services.AccessCode
+    var accessCode accesscodeservice.AccessCode
 	var hasexploded string
 	hasexploded = ""
 	
@@ -109,7 +113,7 @@ func ValidateAccessCode(w http.ResponseWriter, r *http.Request) {
             hasexploded = err.Error()
         }
     } else {
-		response := services.ValidateAccessCode(accessCode)
+		response := accesscodeservice.ValidateAccessCode(accessCode)
 	    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	    w.WriteHeader(http.StatusOK)
 		
@@ -126,7 +130,7 @@ func ValidateAccessCode(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetAccessCode(w http.ResponseWriter, r *http.Request) {
-    response := services.GetAccessCode()
+    response := accesscodeservice.GetAccessCode()
 	
     w.Header().Set("Content-Type", "application/json; charset=UTF-8")
     w.WriteHeader(http.StatusOK)
@@ -181,6 +185,55 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func LoginUser(w http.ResponseWriter, r *http.Request) {
+	var loginRequest types.LoginRequest
+	var hasexploded string
+	hasexploded = ""
+	
+	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+	
+	if err != nil {
+	    hasexploded = err.Error()
+	} else if err := r.Body.Close(); err != nil {
+	    hasexploded = err.Error()
+	} else if err := json.Unmarshal(body, &loginRequest); err != nil {
+	    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	    w.WriteHeader(422) // unprocessable entity
+	    if err := json.NewEncoder(w).Encode(err); err != nil {
+	        hasexploded = err.Error()
+	    }
+	} else {
+		response, err := userservice.Login(loginRequest)
+		
+		if err != nil {
+			if err.Error() == "not found" {
+				w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    		w.WriteHeader(http.StatusNotAcceptable)	
+			} else if err.Error() == "blank credentials" {
+				w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+		    	w.WriteHeader(http.StatusBadRequest)	
+			} else if err.Error() == "401" {
+				w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+		    	w.WriteHeader(http.StatusUnauthorized)	
+			} else {
+				hasexploded = err.Error()
+			}		
+		} else {
+			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	    	w.WriteHeader(http.StatusOK)
+	    	if err := json.NewEncoder(w).Encode(response); err != nil {
+	        	hasexploded = err.Error()
+	    	}
+		}   
+	}
+
+	if hasexploded != "" {
+		log.Printf(fmt.Sprintf("CreateUserActivity - HasExploded! - Error: %v", hasexploded))
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    w.WriteHeader(http.StatusInternalServerError)	
+	}
+}
+
 func GetUser(w http.ResponseWriter, r *http.Request) {
 	var hasexploded string
 	hasexploded = ""
@@ -188,38 +241,47 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	userId := vars["userid"]
 	
-	if userId != "" {
-		var response types.GetUserResponse
+	password := r.Header.Get("key")
 	
-	    user, err := userRepo.GetUser(userId)
+	if err := utilsservice.CheckUserPassword(userId, password); err == nil {
+		if userId != "" {
+			var response types.GetUserResponse
 		
-		if err != nil{
-			if err.Error() == "not found" {
-					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-	    			w.WriteHeader(http.StatusNotAcceptable)	
-			} else if err.Error() == "not uuid" {
-				w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-	    		w.WriteHeader(http.StatusBadRequest)	
-			} else {
-				hasexploded = err.Error()
-			}		
-		} else {
-			response.DeviceType = user.DeviceType
-			response.IsAnonymous = user.IsAnonymous
-			response.IsTest = user.IsTest
-			response.Timestamp = user.Timestamp
-			response.UserId = user.UserId
-			response.Username = user.Username
+		    user, err := userRepo.GetUser(userId)
 			
-		    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		    w.WriteHeader(http.StatusOK)
-		    if err := json.NewEncoder(w).Encode(response); err != nil {
-		        hasexploded = err.Error()
-		    }
-		}	
-	} else {
+			if err != nil {
+				if err.Error() == "not found" {
+						w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+		    			w.WriteHeader(http.StatusNotAcceptable)	
+				} else if err.Error() == "not uuid" {
+					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+		    		w.WriteHeader(http.StatusBadRequest)	
+				} else {
+					hasexploded = err.Error()
+				}		
+			} else {
+				response.DeviceType = user.DeviceType
+				response.IsAnonymous = user.IsAnonymous
+				response.IsTest = user.IsTest
+				response.Timestamp = user.Timestamp
+				response.UserId = user.UserId
+				response.Username = user.Username
+				
+			    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+			    w.WriteHeader(http.StatusOK)
+			    if err := json.NewEncoder(w).Encode(response); err != nil {
+			        hasexploded = err.Error()
+			    }
+			}	
+		} else {
+			w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    	w.WriteHeader(http.StatusBadRequest)	
+		}
+	} else if err.Error() == "401" || err.Error() == "not found" {
 		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-    	w.WriteHeader(http.StatusBadRequest)	
+	    w.WriteHeader(http.StatusUnauthorized)
+	} else {
+		hasexploded = err.Error()
 	}
 	
 	if hasexploded != "" {
@@ -236,41 +298,51 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	
 	vars := mux.Vars(r)
 	userId := vars["userid"]	
-    body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
 	
-    if err != nil {
-        hasexploded = err.Error()
-    } else if err := r.Body.Close(); err != nil {
-        hasexploded = err.Error()
-    } else if err := json.Unmarshal(body, &user); err != nil {
-        w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-        w.WriteHeader(422) // unprocessable entity
-        if err := json.NewEncoder(w).Encode(err); err != nil {
-            hasexploded = err.Error()	
-        }
-    } else {
-		response, err := userRepo.UpdateUser(userId, user)
+	password := r.Header.Get("key")
 	
-		if err != nil {
-			if err.Error() == "not found" {
-				w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-		    	w.WriteHeader(http.StatusNotAcceptable)	
-			} else if err.Error() == "not uuid" {
+	if err := utilsservice.CheckUserPassword(userId, password); err == nil {
+		body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+	
+    	if err != nil {
+        	hasexploded = err.Error()
+	    } else if err := r.Body.Close(); err != nil {
+	        hasexploded = err.Error()
+	    } else if err := json.Unmarshal(body, &user); err != nil {
+	        w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	        w.WriteHeader(422) // unprocessable entity
+	        if err := json.NewEncoder(w).Encode(err); err != nil {
+	            hasexploded = err.Error()	
+	        }
+	    } else {
+			response, err := userRepo.UpdateUser(userId, user)
+		
+			if err != nil {
+				if err.Error() == "not found" {
 					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-		    		w.WriteHeader(http.StatusBadRequest)	
+			    	w.WriteHeader(http.StatusNotAcceptable)	
+				} else if err.Error() == "not uuid" {
+						w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+			    		w.WriteHeader(http.StatusBadRequest)	
+				} else {
+					hasexploded = err.Error()
+				}
 			} else {
-				hasexploded = err.Error()
+				w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+			    w.WriteHeader(http.StatusOK)
+				
+			    if err := json.NewEncoder(w).Encode(response); err != nil {
+			        hasexploded = err.Error()
+			    }
 			}
-		} else {
-			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		    w.WriteHeader(http.StatusOK)
-			
-		    if err := json.NewEncoder(w).Encode(response); err != nil {
-		        hasexploded = err.Error()
-		    }
 		}
+	} else if err.Error() == "401" || err.Error() == "not found" {
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    w.WriteHeader(http.StatusUnauthorized)
+	} else {
+		hasexploded = err.Error()
 	}
-	
+
 	if hasexploded != "" {
 		log.Printf(fmt.Sprintf("UpdateUser - HasExploded! - Error: %v", hasexploded))
 		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
@@ -324,36 +396,88 @@ func GetUserExtraInfo(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	userId := vars["userid"]
 	
-	if userId != "" {
-	    response, err := userRepo.GetUserExtraInfo(userId)
-		
-		if err != nil{
-			if err.Error() == "not found" {
-					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-	    			w.WriteHeader(http.StatusNotAcceptable)	
-			} else if err.Error() == "not uuid" {
-				w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-	    		w.WriteHeader(http.StatusBadRequest)	
-			} else {
-				hasexploded = err.Error()
-			}		
-		} else {
-		    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		    w.WriteHeader(http.StatusOK)
-			
-		    if err := json.NewEncoder(w).Encode(response); err != nil {
-		        hasexploded = err.Error()
-		    }
-		}	
-	} else {
-		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-    	w.WriteHeader(http.StatusBadRequest)	
-	}
+	password := r.Header.Get("key")
 	
+	if err := utilsservice.CheckUserPassword(userId, password); err == nil {
+		if userId != "" {
+		    response, err := userRepo.GetUserExtraInfo(userId)
+			
+			if err != nil{
+				if err.Error() == "not found" {
+						w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+		    			w.WriteHeader(http.StatusNotAcceptable)	
+				} else if err.Error() == "not uuid" {
+					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+		    		w.WriteHeader(http.StatusBadRequest)	
+				} else {
+					hasexploded = err.Error()
+				}		
+			} else {
+			    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+			    w.WriteHeader(http.StatusOK)
+				
+			    if err := json.NewEncoder(w).Encode(response); err != nil {
+			        hasexploded = err.Error()
+			    }
+			}	
+		} else {
+			w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    	w.WriteHeader(http.StatusBadRequest)	
+		}
+	} else if err.Error() == "401" || err.Error() == "not found" {
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    w.WriteHeader(http.StatusUnauthorized)
+	} else {
+		hasexploded = err.Error()
+	}
+
 	if hasexploded != "" {
 		log.Printf(fmt.Sprintf("GetUserExtraInfo - HasExploded! - Error: %v", hasexploded))
 		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
 	    w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
+func CreateMatch(w http.ResponseWriter, r *http.Request) {
+	var match types.MatchRequest
+	var hasexploded string
+	hasexploded = ""
+
+	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+	
+	if err != nil {
+	    hasexploded = err.Error()
+	} else if err := r.Body.Close(); err != nil {
+	    hasexploded = err.Error()
+	} else if err := json.Unmarshal(body, &match); err != nil {
+	    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	    w.WriteHeader(422) // unprocessable entity
+	    if err := json.NewEncoder(w).Encode(err); err != nil {
+	        hasexploded = err.Error()
+	    }
+	} else {
+		err := matchservice.CreateMatch(match)
+		
+		if err != nil {
+			if err.Error() == "not found" {
+				w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    		w.WriteHeader(http.StatusNotAcceptable)	
+			} else if err.Error() == "not uuid" {
+				w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+		    	w.WriteHeader(http.StatusBadRequest)	
+			} else {
+				hasexploded = err.Error()
+			}		
+		} else {
+			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		    w.WriteHeader(http.StatusCreated)
+		}   
+	}
+
+	if hasexploded != "" {
+		log.Printf(fmt.Sprintf("CreateUserActivity - HasExploded! - Error: %v", hasexploded))
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    w.WriteHeader(http.StatusInternalServerError)	
 	}
 }
 
@@ -364,34 +488,144 @@ func GetUserMatch(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	userId := vars["userid"]
 	
-	if userId != "" {
-	    response, err := matchRepo.GetUserMatch(userId)
-		
-		if err != nil{
-			if err.Error() == "not found" {
-					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-	    			w.WriteHeader(http.StatusNoContent)	
-			} else if err.Error() == "not uuid" {
-				w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-	    		w.WriteHeader(http.StatusBadRequest)	
-			} else {
-				hasexploded = err.Error()
-			}		
-		} else {
-		    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		    w.WriteHeader(http.StatusOK)
+	password := r.Header.Get("key")
+	
+	if err := utilsservice.CheckUserPassword(userId, password); err == nil {
+		if userId != "" {
+		    response, err := matchservice.GetUserMatch(userId)
 			
-		    if err := json.NewEncoder(w).Encode(response); err != nil {
-		        hasexploded = err.Error()
-		    }
-		}	
-	} else {
+			if err != nil{
+				if err.Error() == "not found" {
+						w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+		    			w.WriteHeader(http.StatusNoContent)	
+				} else if err.Error() == "not uuid" {
+					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+		    		w.WriteHeader(http.StatusBadRequest)	
+				} else {
+					hasexploded = err.Error()
+				}		
+			} else {
+			    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+			    w.WriteHeader(http.StatusOK)
+				
+			    if err := json.NewEncoder(w).Encode(response); err != nil {
+			        hasexploded = err.Error()
+			    }
+			}	
+		} else {
+			w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    	w.WriteHeader(http.StatusBadRequest)	
+		}
+	} else if err.Error() == "401" || err.Error() == "not found" {
 		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-    	w.WriteHeader(http.StatusBadRequest)	
+	    w.WriteHeader(http.StatusUnauthorized)
+	} else {
+		hasexploded = err.Error()
 	}
 	
 	if hasexploded != "" {
 		log.Printf(fmt.Sprintf("GetUserMatch - HasExploded! - Error: %v", hasexploded))
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
+func GetUserChats(w http.ResponseWriter, r *http.Request) {
+	var hasexploded string
+	hasexploded = ""
+	
+	vars := mux.Vars(r)
+	userId := vars["userid"]
+	
+	password := r.Header.Get("key")
+	
+	if err := utilsservice.CheckUserPassword(userId, password); err == nil {
+		response, err := chatservice.GetUserActiveChats(userId)
+		
+		if err != nil {
+			if err.Error() == "not found" {
+				w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+		    	w.WriteHeader(http.StatusNoContent)	
+			} else if err.Error() == "not uuid" {
+				w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+		    	w.WriteHeader(http.StatusBadRequest)	
+			} else {
+				hasexploded = err.Error()
+			}		
+		} else {
+			if response != nil {
+				w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+				w.WriteHeader(http.StatusOK)
+					
+				if err := json.NewEncoder(w).Encode(response); err != nil {
+				    hasexploded = err.Error()
+				}
+			} else {
+				w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+		    	w.WriteHeader(http.StatusNoContent)	
+			}
+		}	
+	} else if err.Error() == "401" || err.Error() == "not found" {
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    w.WriteHeader(http.StatusUnauthorized)
+	} else {
+		hasexploded = err.Error()
+	}
+
+	if hasexploded != "" {
+		log.Printf(fmt.Sprintf("Handlers.GetUserChats() - HasExploded! - Error: %v", hasexploded))
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
+func UpdateChat(w http.ResponseWriter, r *http.Request) {
+	var hasexploded string
+	hasexploded = ""
+	
+	action := r.URL.Query().Get("action")
+	log.Printf(fmt.Sprintf("Handlers.UpdateChat() - action: %v", action))
+	
+	vars := mux.Vars(r)
+	userId := vars["userid"]
+	receiverId := vars["receiverid"]
+	
+	password := r.Header.Get("key")
+	
+	if err := utilsservice.CheckUserPassword(userId, password); err == nil {
+		if userId != "" && receiverId != "" && action != "" {
+		    err := chatservice.UpdateChat(userId, receiverId, action)
+			
+			if err != nil{
+				if err.Error() == "not found" {
+						w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+		    			w.WriteHeader(http.StatusNotAcceptable)	
+				} else if err.Error() == "not uuid" {
+					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+		    		w.WriteHeader(http.StatusBadRequest)	
+				} else if err.Error() == "405" {
+					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+		    		w.WriteHeader(http.StatusMethodNotAllowed)	
+				} else {
+					hasexploded = err.Error()
+				}		
+			} else {
+				w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+			    w.WriteHeader(http.StatusOK)
+			}	
+		} else {
+			w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    	w.WriteHeader(http.StatusBadRequest)	
+		}
+	} else if err.Error() == "401" || err.Error() == "not found" {
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    w.WriteHeader(http.StatusUnauthorized)
+	} else {
+		hasexploded = err.Error()
+	}
+	
+	if hasexploded != "" {
+		log.Printf(fmt.Sprintf("Handlers.GetUserMatch() - HasExploded! - Error: %v", hasexploded))
 		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
 	    w.WriteHeader(http.StatusInternalServerError)
 	}
@@ -406,40 +640,49 @@ func CreateMessage(w http.ResponseWriter, r *http.Request) {
 	userId := vars["userid"]
 	receiverId := vars["receiverid"]
 	
-	if userId != "" && receiverId != "" {
-		 body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+	password := r.Header.Get("key")
 	
-	    if err != nil {
-	        hasexploded = err.Error()
-	    } else if err := r.Body.Close(); err != nil {
-	        hasexploded = err.Error()
-	    } else if err := json.Unmarshal(body, &message); err != nil {
-	        w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	        w.WriteHeader(422) // unprocessable entity
-	        if err := json.NewEncoder(w).Encode(err); err != nil {
-	            hasexploded = err.Error()
-	        }
-	    } else {
-			err := messageRepo.CreateMessage(userId, receiverId, message)
+	if err := utilsservice.CheckUserPassword(userId, password); err == nil {
+		if userId != "" && receiverId != "" {
+			 body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
 		
-			if err != nil {
-				if err.Error() == "not found" {
-					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-	    			w.WriteHeader(http.StatusNotAcceptable)	
-				} else if err.Error() == "not uuid" {
-					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-		    		w.WriteHeader(http.StatusBadRequest)	
+		    if err != nil {
+		        hasexploded = err.Error()
+		    } else if err := r.Body.Close(); err != nil {
+		        hasexploded = err.Error()
+		    } else if err := json.Unmarshal(body, &message); err != nil {
+		        w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		        w.WriteHeader(422) // unprocessable entity
+		        if err := json.NewEncoder(w).Encode(err); err != nil {
+		            hasexploded = err.Error()
+		        }
+		    } else {
+				err := messageservice.CreateMessage(userId, receiverId, message)
+			
+				if err != nil {
+					if err.Error() == "not found" {
+						w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+		    			w.WriteHeader(http.StatusNotAcceptable)	
+					} else if err.Error() == "not uuid" {
+						w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+			    		w.WriteHeader(http.StatusBadRequest)	
+					} else {
+						hasexploded = err.Error()
+					}		
 				} else {
-					hasexploded = err.Error()
-				}		
-			} else {
-				w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		    	w.WriteHeader(http.StatusCreated)
-			}   
+					w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+			    	w.WriteHeader(http.StatusCreated)
+				}   
+			}
+		} else {
+			w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    	w.WriteHeader(http.StatusBadRequest)
 		}
-	} else {
+	} else if err.Error() == "401" || err.Error() == "not found" {
 		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-    	w.WriteHeader(http.StatusBadRequest)
+	    w.WriteHeader(http.StatusUnauthorized)
+	} else {
+		hasexploded = err.Error()
 	}
 	
 	if hasexploded != "" {
@@ -460,33 +703,42 @@ func GetUserMessagesByReceiverId(w http.ResponseWriter, r *http.Request) {
 	userId := vars["userid"]
 	receiverId := vars["receiverid"]
 	
-	if userId != "" && receiverId != "" {
-	    response, err := messageRepo.GetUserMessagesByReceiverId(userId, receiverId, startdate)
-		
-		if err != nil{
-			if err.Error() == "not found" {
-					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-	    			w.WriteHeader(http.StatusNotAcceptable)	
-			} else if err.Error() == "not uuid" {
-				w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-	    		w.WriteHeader(http.StatusBadRequest)	
-			} else {
-				hasexploded = err.Error()
-			}		
-		} else if response != nil {
-		    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		    w.WriteHeader(http.StatusOK)
+	password := r.Header.Get("key")
+	
+	if err := utilsservice.CheckUserPassword(userId, password); err == nil {
+		if userId != "" && receiverId != "" {
+		    response, err := messageservice.GetUserMessagesByReceiverId(userId, receiverId, startdate)
 			
-		    if err := json.NewEncoder(w).Encode(response); err != nil {
-		        hasexploded = err.Error()
-		    }
+			if err != nil{
+				if err.Error() == "not found" {
+						w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+		    			w.WriteHeader(http.StatusNotAcceptable)	
+				} else if err.Error() == "not uuid" {
+					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+		    		w.WriteHeader(http.StatusBadRequest)	
+				} else {
+					hasexploded = err.Error()
+				}		
+			} else if response != nil {
+			    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+			    w.WriteHeader(http.StatusOK)
+				
+			    if err := json.NewEncoder(w).Encode(response); err != nil {
+			        hasexploded = err.Error()
+			    }
+			} else {
+				w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+			    w.WriteHeader(http.StatusNoContent)
+			}	
 		} else {
-			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		    w.WriteHeader(http.StatusNoContent)
-		}	
-	} else {
+			w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    	w.WriteHeader(http.StatusBadRequest)	
+		}
+	} else if err.Error() == "401" || err.Error() == "not found" {
 		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-    	w.WriteHeader(http.StatusBadRequest)	
+	    w.WriteHeader(http.StatusUnauthorized)
+	} else {
+		hasexploded = err.Error()
 	}
 	
 	if hasexploded != "" {
@@ -504,40 +756,49 @@ func CreateUserActivity(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	userId := vars["userid"]
 	
-	if userId != "" {
-		body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+	password := r.Header.Get("key")
 	
-	    if err != nil {
-	        hasexploded = err.Error()
-	    } else if err := r.Body.Close(); err != nil {
-	        hasexploded = err.Error()
-	    } else if err := json.Unmarshal(body, &activity); err != nil {
-	        w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	        w.WriteHeader(422) // unprocessable entity
-	        if err := json.NewEncoder(w).Encode(err); err != nil {
-	            hasexploded = err.Error()
-	        }
-	    } else {
-			err := activityRepo.CreateUserActivity(userId, activity)
+	if err := utilsservice.CheckUserPassword(userId, password); err == nil {
+		if userId != "" {
+			body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
 		
-			if err != nil {
-				if err.Error() == "not found" {
-					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-	    			w.WriteHeader(http.StatusNotAcceptable)	
-				} else if err.Error() == "not uuid" {
-					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-		    		w.WriteHeader(http.StatusBadRequest)	
+		    if err != nil {
+		        hasexploded = err.Error()
+		    } else if err := r.Body.Close(); err != nil {
+		        hasexploded = err.Error()
+		    } else if err := json.Unmarshal(body, &activity); err != nil {
+		        w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		        w.WriteHeader(422) // unprocessable entity
+		        if err := json.NewEncoder(w).Encode(err); err != nil {
+		            hasexploded = err.Error()
+		        }
+		    } else {
+				err := activityservice.CreateUserActivity(userId, activity)
+			
+				if err != nil {
+					if err.Error() == "not found" {
+						w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+		    			w.WriteHeader(http.StatusNotAcceptable)	
+					} else if err.Error() == "not uuid" {
+						w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+			    		w.WriteHeader(http.StatusBadRequest)	
+					} else {
+						hasexploded = err.Error()
+					}		
 				} else {
-					hasexploded = err.Error()
-				}		
-			} else {
-				w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		    	w.WriteHeader(http.StatusCreated)
-			}   
+					w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+			    	w.WriteHeader(http.StatusCreated)
+				}   
+			}
+		} else {
+			w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    	w.WriteHeader(http.StatusBadRequest)	
 		}
-	} else {
+	} else if err.Error() == "401" || err.Error() == "not found" {
 		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-    	w.WriteHeader(http.StatusBadRequest)	
+	    w.WriteHeader(http.StatusUnauthorized)
+	} else {
+		hasexploded = err.Error()
 	}
 	
 	if hasexploded != "" {
@@ -554,30 +815,39 @@ func GetUserActivity(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	userId := vars["userid"]
 	
-	if userId != "" {
-	    response, err := activityRepo.GetUserActivity(userId)
-		
-		if err != nil{
-			if err.Error() == "not found" {
-					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-	    			w.WriteHeader(http.StatusNoContent)	
-			} else if err.Error() == "not uuid" {
-				w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-	    		w.WriteHeader(http.StatusBadRequest)	
-			} else {
-				hasexploded = err.Error()
-			}		
-		} else {
-		    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		    w.WriteHeader(http.StatusOK)
+	password := r.Header.Get("key")
+	
+	if err := utilsservice.CheckUserPassword(userId, password); err == nil {
+		if userId != "" {
+		    response, err := activityservice.GetUserActivity(userId)
 			
-		    if err := json.NewEncoder(w).Encode(response); err != nil {
-		        hasexploded = err.Error()
-		    }
-		}	
-	} else {
+			if err != nil{
+				if err.Error() == "not found" {
+						w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+		    			w.WriteHeader(http.StatusNoContent)	
+				} else if err.Error() == "not uuid" {
+					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+		    		w.WriteHeader(http.StatusBadRequest)	
+				} else {
+					hasexploded = err.Error()
+				}		
+			} else {
+			    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+			    w.WriteHeader(http.StatusOK)
+				
+			    if err := json.NewEncoder(w).Encode(response); err != nil {
+			        hasexploded = err.Error()
+			    }
+			}	
+		} else {
+			w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    	w.WriteHeader(http.StatusBadRequest)	
+		}
+	} else if err.Error() == "401" || err.Error() == "not found" {
 		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
-    	w.WriteHeader(http.StatusBadRequest)	
+	    w.WriteHeader(http.StatusUnauthorized)
+	} else {
+		hasexploded = err.Error()
 	}
 	
 	if hasexploded != "" {
@@ -673,5 +943,25 @@ func HelpPagePOSTActivity(w http.ResponseWriter, r *http.Request) {
 
 func HelpPageGETActivity(w http.ResponseWriter, r *http.Request) {
     body, _ := ioutil.ReadFile("helppage/GET-activity.html")
+    fmt.Fprint(w, string(body))
+}
+
+func HelpPagePOSTUserLogin(w http.ResponseWriter, r *http.Request) {
+    body, _ := ioutil.ReadFile("helppage/POST-user-login.html")
+    fmt.Fprint(w, string(body))
+}
+
+func HelpPagePOSTMatch(w http.ResponseWriter, r *http.Request) {
+    body, _ := ioutil.ReadFile("helppage/POST-match.html")
+    fmt.Fprint(w, string(body))
+}
+
+func HelpPageGETChats(w http.ResponseWriter, r *http.Request) {
+    body, _ := ioutil.ReadFile("helppage/GET-chats.html")
+    fmt.Fprint(w, string(body))
+}
+
+func HelpPagePUTChats(w http.ResponseWriter, r *http.Request) {
+    body, _ := ioutil.ReadFile("helppage/PUT-chats.html")
     fmt.Fprint(w, string(body))
 }

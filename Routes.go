@@ -60,6 +60,12 @@ var routes = Routes{
         CreateUser,
     },
 	Route{
+        "LoginUser",
+        "POST",
+        "/users/login",
+        LoginUser,
+    },
+	Route{
         "GetUser",
         "GET",
         "/users/{userid}",
@@ -84,10 +90,28 @@ var routes = Routes{
         GetUserExtraInfo,
     },
 	Route{
+        "CreateMatch",
+        "POST",
+        "/matches",
+        CreateMatch,
+    },
+	Route{
         "GetUserMatch",
         "GET",
         "/users/{userid}/match",
         GetUserMatch,
+    },
+	Route{
+        "GetUserChats",
+        "GET",
+        "/users/{userid}/chats",
+        GetUserChats,
+    },
+	Route{
+        "UpdateChat",
+        "PUT",
+        "/users/{userid}/chats/{receiverid}",
+        UpdateChat,
     },
 	Route{
         "CreateMessage",
@@ -208,5 +232,29 @@ var routes = Routes{
         "GET",
         "/help/GET-activity",
         HelpPageGETActivity,
+    },
+	Route{
+        "HelpPagePOSTUserLogin",
+        "GET",
+        "/help/POST-user-login",
+        HelpPagePOSTUserLogin,
+    },
+	Route{
+        "HelpPagePOSTMatch",
+        "GET",
+        "/help/POST-match",
+        HelpPagePOSTMatch,
+    },
+	Route{
+        "HelpPageGETChats",
+        "GET",
+        "/help/GET-chats",
+        HelpPageGETChats,
+    },
+	Route{
+        "HelpPagePUTChats",
+        "GET",
+        "/help/PUT-chats",
+        HelpPagePUTChats,
     },
 }

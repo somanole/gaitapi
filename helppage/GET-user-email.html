@@ -28,6 +28,9 @@
 
     <h2>Request Information</h2>
 
+    <h3>Header Parameters</h3>
+    <p>None.</p>
+
     <h3>URI Parameters</h3>
         <p>{email} - is the email of the user that is being retrieved</p>
         <p>Example: GET http://api.gait.io/users/email/sorin@entropi.io</p>
@@ -91,7 +94,6 @@
     <p>HttpStatusCode is returned:</p>
     <p>200 Status OK - for success</p>
     <p>400 Bad Request - when the email provided in the url is missing</p>
-    <p>406 Not Acceptable - when the email provided in the url is not found on the server</p>
     <p>422 Unprocessable Entity - when the request object is not in the right format</p>   
     <p>500 Internal Server Error - for unexpected errors</p>
 

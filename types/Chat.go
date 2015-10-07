@@ -8,8 +8,15 @@ type Chat struct{
 	ReceiverId uuid.UUID
 	ReceiverUsername string
 	IsChatActive bool
-	IsChatBlocked bool
+	IsChatBlockedBySender bool
+	IsChatBlockedByReceiver bool
+	LastMessage string
 	Timestamp int64
 }
 
 type Chats []Chat
+
+type ChatRequest struct {
+	FirstUserId string
+	SecondUserId string
+}

@@ -3,7 +3,7 @@ package types
 
 import "code.google.com/p/go-uuid/uuid"
 
-type User struct{
+type User struct {
 	UserId uuid.UUID
 	Username string
 	FacebookAccessToken string
@@ -19,7 +19,7 @@ type User struct{
 	Timestamp int64
 }
 
-type UserRequest struct{
+type UserRequest struct {
 	FacebookAccessToken string
 	TwitterAccessToken string
 	GoogleAccessToken string
@@ -31,7 +31,7 @@ type UserRequest struct{
 	GenderPreference string
 }
 
-type UserUpdateRequest struct{
+type UserUpdateRequest struct {
 	FacebookAccessToken string
 	TwitterAccessToken string
 	GoogleAccessToken string
@@ -41,28 +41,44 @@ type UserUpdateRequest struct{
 	GenderPreference string
 }
 
-type UserByEmail struct{
+type UserByEmail struct {
 	Email string
 	UserId uuid.UUID
 }
 
-type UserExtraInfo struct{
+type UserExtraInfo struct {
 	UserId uuid.UUID
 	WalkingProgress int
 	Timestamp int64
 }
 
-type CreateUserResponse struct{
+type CreateUserResponse struct {
 	UserId uuid.UUID
 	Username string
 	Timestamp int64
 }
 
-type GetUserResponse struct{
+type GetUserResponse struct {
 	UserId uuid.UUID
 	Username string
 	DeviceType string
 	IsTest bool
 	IsAnonymous bool
+	Timestamp int64
+}
+
+type LoginRequest struct {
+	Email string
+	Password string
+	DeviceType string
+	DeviceId string
+	IsLoggedIn bool
+	PushToken string
+	Timestamp int64
+}
+
+type LoginResponse struct {
+	UserId uuid.UUID
+	Username string
 	Timestamp int64
 }

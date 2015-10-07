@@ -28,6 +28,9 @@
 
     <h2>Request Information</h2>
 
+    <h3>Header Parameters</h3>
+    <p>key - is the password of the user associated with the {userid}</p>
+
     <h3>URI Parameters</h3>
         <p>{userid} - the Id of the user that activity is being created for.</p>
         <p>Example: POST http://api.gait.io/users/02f7e366-20e9-49fb-b5ab-62ccbe0907f1/activities</p>
@@ -131,7 +134,7 @@
     <p>HttpStatusCode is returned:</p>
     <p>201 Status Created - for success</p>
     <p>400 Bad Request - when the userid provided in the url is missing or is not in UUID format</p>
-    <p>406 Not Acceptable - when the userid provided in the url is not found on the server</p>
+    <p>401 Unauthorized - when the credentials provided are not associated with any user on the server</p>
     <p>422 Unprocessable Entity - when the request object is not in the right format</p>
     <p>500 Internal Server Error - for unexpected errors</p>
 

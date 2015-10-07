@@ -28,10 +28,11 @@
 
     <h2>Request Information</h2>
 
+    <h3>Header Parameters</h3>
+    <p>None.</p>
+
     <h3>URI Parameters</h3>
-        <p>None.</p>
-
-
+    <p>None.</p>
 
     <h3>Body Parameters</h3>
 
@@ -73,10 +74,7 @@
     </div>
 
     <h2>Response Information</h2>
-
-    <h3>Resource Description</h3>
-
-    <p>Returns an ValidateAccessCodeResponse Object</p>
+    <h3>Body Parameters</h3>
 
     <table class="help-page-table">
         <thead>
@@ -125,7 +123,11 @@
         </div>
     </div>
 
-
+    <h3>Resource Description</h3>
+    <p>HttpStatusCode is returned:</p>
+    <p>200 Status Created - for success</p>
+    <p>422 Unprocessable Entity - when the request object is not in the right format</p>
+    <p>500 Internal Server Error - for unexpected errors</p>
 
 </div>
     </section>

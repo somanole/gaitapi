@@ -111,6 +111,12 @@
                 <p>Use this endpoint and HTTP method to get a user from the Gait Server by email</p>
             </td>
         </tr>
+        <tr>
+            <td class="api-name"><a href="/help/POST-user-login">POST http://api.gait.io/users/login</a></td>
+            <td class="api-documentation">
+                <p>Use this endpoint and HTTP method to login a user on the Gait Server</p>
+            </td>
+        </tr>
     </tbody>
 </table>
 
@@ -141,6 +147,33 @@
                 <p>Use this endpoint and HTTP method to get the match for a user from the Gait Server</p>
             </td>
         </tr>
+        <tr>
+            <td class="api-name"><a href="/help/POST-match">POST http://api.gait.io/matches</a></td>
+            <td class="api-documentation">
+                <p>Use this endpoint and HTTP method to create a match between 2 users on the Gait Server. This is for testing purposes only, will be deactivated once the app goes live</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<h2 id="User">Chats</h2>
+<table class="help-page-table">
+    <thead>
+        <tr><th>API</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="api-name"><a href="/help/GET-chats">GET http://api.gait.io/users/{userid}/chats</a></td>
+            <td class="api-documentation">
+                <p>Use this endpoint and HTTP method to get the active chats for a user from the Gait Server</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="api-name"><a href="/help/PUT-chats">PUT http://api.gait.io/users/{userid}/chats/{receiverid}?action</a></td>
+            <td class="api-documentation">
+                <p>Use this endpoint and HTTP method to update (block/unblock/delete) a private chat for a user on the Gait Server</p>
+            </td>
+        </tr>
     </tbody>
 </table>
 
@@ -159,7 +192,7 @@
         <tr>
             <td class="api-name"><a href="/help/GET-message">GET http://api.gait.io/users/{userid}/messages/{receiverid}?startdate</a></td>
             <td class="api-documentation">
-                <p>Use this endpoint and HTTP method to get the messages for a user in a private chat on the Gait Server</p>
+                <p>Use this endpoint and HTTP method to get the messages for a user in a private chat from the Gait Server</p>
             </td>
         </tr>
     </tbody>
