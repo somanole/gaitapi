@@ -24,7 +24,7 @@
         
 <h1>POST http://api.gait.io/users/{userid}/accelerations</h1>
 <div>
-    <p>Use this endpoint and HTTP method to create an acceleration for a user on the Gait Server.</p>
+    <p>Use this endpoint and HTTP method to create a list of accelerations for a user on the Gait Server.</p>
 
     <h2>Request Information</h2>
 
@@ -103,12 +103,26 @@
         <div class="sample-content">
             <span><b>Sample:</b></span>
             <pre class="wrapped">
-            {
-              &quot;Timestamp&quot;: 1436998318722,
-              &quot;X&quot;: 1.5035586,
-              &quot;Y&quot;: 6.9527617,
-              &quot;Z&quot;: 6.9719152
-            }
+            [
+                {
+                    "Timestamp":1443695575,
+                    "x":-1.32,
+                    "y":0.42,
+                    "z":7.99
+                },
+                {
+                    "Timestamp":1443695576,
+                    "x":-1.32,
+                    "y":0.42,
+                    "z":7.99
+                },
+                {
+                    "Timestamp":1443695577,
+                    "x":-1.32,
+                    "y":0.42,
+                    "z":7.99
+                }
+            ]
             </pre>
         </div>
     </div>

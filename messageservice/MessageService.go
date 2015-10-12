@@ -6,6 +6,8 @@ import (
 	"github.com/somanole/gaitapi/messagerepo"
 	"github.com/somanole/gaitapi/utilsservice"
 	"github.com/somanole/gaitapi/chatservice"
+	"github.com/somanole/gaitapi/notificationsservice"
+	"github.com/somanole/gaitapi/activityservice"
 	"github.com/somanole/gaitapi/types"
 	"code.google.com/p/go-uuid/uuid"
 )
@@ -36,6 +38,11 @@ func CreateMessage(userId string, receiverId string, mr types.MessageRequest) er
 		
 		if err = messageRepo.CreateMessage(m); err == nil {
 			err = chatservice.UpdateLastMessageChat(userId, receiverId, m.Text)
+			
+			var lastActivity types.Activity
+			if lastActivity, err = activityservice.GetUserActivity(receiverId); err == nil {
+				err = notificationsservice.SendPushNotification(lastActivity.DeviceType, lastActivity.PushToken, m.Text)
+			}
 		}
 	}
 	

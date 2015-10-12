@@ -23,7 +23,7 @@ func init() {
 var currentId int64
 var accelerations types.Accelerations
 
-func (repo *MockedAccelerationRepo) CreateAcceleration(userId string, a types.Acceleration) error {
+func (repo *MockedAccelerationRepo) CreateAcceleration(a types.Acceleration) error {
     var err error
 	err = nil
 	

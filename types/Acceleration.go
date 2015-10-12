@@ -20,6 +20,8 @@ type AccelerationRequest struct {
 
 type Accelerations []Acceleration
 
+type AccelerationsRequest []AccelerationRequest
+
 type AccelerationsCount struct {
 	AccelerationsCount int64 
 }

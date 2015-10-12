@@ -10,22 +10,20 @@ import (
 	"log"
 	"github.com/gorilla/mux"
 	"github.com/somanole/gaitapi/types"
-	"github.com/somanole/gaitapi/accelerationrepo"
 	"github.com/somanole/gaitapi/userrepo"
 	"github.com/somanole/gaitapi/matchservice"
 	"github.com/somanole/gaitapi/messageservice"
 	"github.com/somanole/gaitapi/accesscodeservice"
 	"github.com/somanole/gaitapi/activityservice"
+	"github.com/somanole/gaitapi/accelerationservice"
 	"github.com/somanole/gaitapi/userservice"
 	"github.com/somanole/gaitapi/chatservice"
 	"github.com/somanole/gaitapi/utilsservice"
 )
 
-var accelerationRepo accelerationrepo.AccelerationRepo
 var userRepo userrepo.UserRepo
 
 func init() {
-	accelerationRepo = accelerationrepo.New()
 	userRepo = userrepo.New()
 }
 
@@ -34,7 +32,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateUserAcceleration(w http.ResponseWriter, r *http.Request) {
-	var acceleration types.AccelerationRequest
+	var accelerations types.AccelerationsRequest
 	var hasexploded string
 	hasexploded = ""
 	
@@ -51,7 +49,7 @@ func CreateUserAcceleration(w http.ResponseWriter, r *http.Request) {
 		        hasexploded = err.Error()
 		    } else if err := r.Body.Close(); err != nil {
 		        hasexploded = err.Error()
-		    } else if err := json.Unmarshal(body, &acceleration); err != nil {
+		    } else if err := json.Unmarshal(body, &accelerations); err != nil {
 		        w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		        w.WriteHeader(422) // unprocessable entity
 				
@@ -59,7 +57,7 @@ func CreateUserAcceleration(w http.ResponseWriter, r *http.Request) {
 		            hasexploded = err.Error()
 		        }
 		    } else {
-				err := accelerationRepo.CreateAcceleration(userId, acceleration)
+				err := accelerationservice.CreateAccelerations(userId, accelerations)
 		    	
 				if err != nil {
 					if err.Error() == "not found" {
