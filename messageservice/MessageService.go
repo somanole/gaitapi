@@ -2,6 +2,7 @@
 package messageservice
 
 import (
+	"strings"
 	"time"
 	"github.com/somanole/gaitapi/messagerepo"
 	"github.com/somanole/gaitapi/utilsservice"
@@ -29,7 +30,7 @@ func CreateMessage(userId string, receiverId string, mr types.MessageRequest) er
 		m.ReceiverId = uuid.Parse(receiverId)
 		m.MessageId = uuid.NewRandom()
 		m.IsRead = false
-		m.Text = mr.Text
+		m.Text = strings.Replace(mr.Text, "'", "''", -1)
 		if mr.Timestamp != 0 {
 			m.Timestamp = int64(time.Unix(mr.Timestamp, 0).UTC().Unix())
 		} else {
