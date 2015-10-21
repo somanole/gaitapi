@@ -7,6 +7,12 @@ import (
 	"log"
 	"github.com/somanole/gaitapi/utilsrepo"
 	"code.google.com/p/go-uuid/uuid"
+	"github.com/somanole/gaitapi/types"
+	"time"
+	"net/http"
+	"io"
+	"io/ioutil"
+	"encoding/json"
 )
 
 var utilsRepo utilsrepo.UtilsRepo
@@ -100,4 +106,54 @@ func CheckLoginCredentials(email string, password string) (string, error) {
 	}
 	
 	return userId, err
+}
+
+func RegisterInterest(ir types.InterestRequest) error {
+	var i types.Interest
+	var err error
+	err = nil
+	
+	log.Printf(fmt.Sprintf("UtilsService.RegisterInterest() - Received email: %v", ir.Email))
+	
+	if ir.Email != "" {
+		i.Timestamp = int64(time.Now().UTC().Unix())
+		i.Email = ir.Email
+			
+		err = utilsRepo.RegisterInterest(i)		
+	} else {
+		log.Printf(fmt.Sprintf("UtilsService.RegisterInterest() - Received email is blank: %v", ir.Email))
+		err = errors.New("blank credentials")
+	}
+	
+	return err
+}
+
+func GenerateRandomUsername() (types.WordnikResponse, error) {
+	log.Printf("UtilsService.GenerateRandomUsername() - ENTERED!!")
+	
+	var errorReturn error
+	var wordnikResponse types.WordnikResponse
+	errorReturn = nil
+	
+	r, err := http.Get("http://api.wordnik.com/v4/words.json/randomWords?hasDictionaryDef=true&minCorpusCount=0&minLength=3&maxLength=15&limit=2&api_key=a2a73e7b926c924fad7001ca3111acd55af2ffabf50eb4ae5")
+	
+	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+	
+	if err != nil {
+	    errorReturn = err
+        log.Printf(fmt.Sprintf("UtilsService.GenerateRandomUsername() - Error: %s", err))
+	} else if err := r.Body.Close(); err != nil {
+	    errorReturn = err
+        log.Printf(fmt.Sprintf("UtilsService.GenerateRandomUsername() - Error: %s", err))
+	} else if err := json.Unmarshal(body, &wordnikResponse); err != nil {
+	    errorReturn = err
+        log.Printf(fmt.Sprintf("UtilsService.GenerateRandomUsername() - Error: %s", err))
+	} else {
+		log.Printf(fmt.Sprintf("UtilsService.GenerateRandomUsername() - RESPONSE: +%v", wordnikResponse))
+	}
+	
+	
+	log.Printf("UtilsService.GenerateRandomUsername() - EXIT!!")
+	
+	return wordnikResponse, errorReturn
 }

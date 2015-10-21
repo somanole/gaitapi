@@ -52,6 +52,10 @@ type UserExtraInfo struct {
 	Timestamp int64
 }
 
+type UserExtraInfoRequest struct {
+	WalkingProgress int
+}
+
 type CreateUserResponse struct {
 	UserId uuid.UUID
 	Username string

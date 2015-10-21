@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"github.com/gocql/gocql"
+	"github.com/somanole/gaitapi/types"
 )
 
 type (
@@ -141,4 +142,19 @@ func (repo *CassandraUtilsRepo) CheckLoginCredentials(email string, rpassword st
 	}
 	
 	return userId, err
+}
+
+func (repo *CassandraUtilsRepo) RegisterInterest(i types.Interest) error {
+    // insert interest
+	var err error
+	err = nil
+	
+	sql :=fmt.Sprintf("INSERT INTO interests (email, timestamp) VALUES ('%v', %v)", i.Email, i.Timestamp)
+						
+	log.Printf(sql)
+	if err = session.Query(sql).Exec(); err != nil {
+		log.Printf(fmt.Sprintf("CassandraUtilsRepo.RegisterInterest() - Error: %v", err.Error()))
+	} 
+	
+    return err
 }

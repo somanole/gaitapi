@@ -90,6 +90,12 @@ var routes = Routes{
         GetUserExtraInfo,
     },
 	Route{
+        "UpdateUserExtraInfo",
+        "PUT",
+        "/users/{userid}/extrainfo",
+        UpdateUserExtraInfo,
+    },
+	Route{
         "CreateMatch",
         "POST",
         "/matches",
@@ -142,6 +148,18 @@ var routes = Routes{
         "POST",
         "/users/{userid}/accelerations",
         CreateUserAcceleration,
+    },
+	Route{
+        "RegisterInterest",
+        "POST",
+        "/interests",
+        RegisterInterest,
+    },
+	Route{
+        "GetWordnik",
+        "GET",
+        "/wordnik",
+        GetWordnik,
     },
 	Route{
         "HelpPageIndex",
@@ -256,5 +274,17 @@ var routes = Routes{
         "GET",
         "/help/PUT-chats",
         HelpPagePUTChats,
+    },
+	Route{
+        "HelpPagePOSTInterest",
+        "GET",
+        "/help/POST-interest",
+        HelpPagePOSTInterest,
+    },
+	Route{
+        "HelpPagePUTExtraInfo",
+        "GET",
+        "/help/PUT-extrainfo",
+        HelpPagePUTExtraInfo,
     },
 }

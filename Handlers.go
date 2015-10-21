@@ -158,7 +158,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
             hasexploded = err.Error()
         }
     } else {
-		response, err := userRepo.CreateUser(user)
+		response, err := userservice.CreateUser(user)
 	
 		if err != nil {
 			if err.Error() == "email already registered" {
@@ -431,6 +431,61 @@ func GetUserExtraInfo(w http.ResponseWriter, r *http.Request) {
 
 	if hasexploded != "" {
 		log.Printf(fmt.Sprintf("GetUserExtraInfo - HasExploded! - Error: %v", hasexploded))
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
+func UpdateUserExtraInfo(w http.ResponseWriter, r *http.Request) {
+	var uer types.UserExtraInfoRequest
+	var hasexploded string
+	hasexploded = ""
+	
+	vars := mux.Vars(r)
+	userId := vars["userid"]	
+	
+	password := r.Header.Get("key")
+	
+	if err := utilsservice.CheckUserPassword(userId, password); err == nil {
+		body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+	
+    	if err != nil {
+        	hasexploded = err.Error()
+	    } else if err := r.Body.Close(); err != nil {
+	        hasexploded = err.Error()
+	    } else if err := json.Unmarshal(body, &uer); err != nil {
+	        w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	        w.WriteHeader(422) // unprocessable entity
+	        if err := json.NewEncoder(w).Encode(err); err != nil {
+	            hasexploded = err.Error()	
+	        }
+	    } else {
+			err := userservice.UpdateUserExtraInfo(userId, uer)
+		
+			if err != nil {
+				if err.Error() == "not found" {
+					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+			    	w.WriteHeader(http.StatusNotAcceptable)	
+				} else if err.Error() == "not uuid" || err.Error() == "400" {
+						w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+			    		w.WriteHeader(http.StatusBadRequest)	
+				} else {
+					hasexploded = err.Error()
+				}
+			} else {
+				w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+			    w.WriteHeader(http.StatusOK)
+			}
+		}
+	} else if err.Error() == "401" || err.Error() == "not found" {
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    w.WriteHeader(http.StatusUnauthorized)
+	} else {
+		hasexploded = err.Error()
+	}
+
+	if hasexploded != "" {
+		log.Printf(fmt.Sprintf("Handlers.UpdateUserExtraInfo() - HasExploded! - Error: %v", hasexploded))
 		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
 	    w.WriteHeader(http.StatusInternalServerError)
 	}
@@ -855,6 +910,46 @@ func GetUserActivity(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func RegisterInterest(w http.ResponseWriter, r *http.Request) {
+	var interest types.InterestRequest
+	var hasexploded string
+	hasexploded = ""
+	
+	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+	
+	if err != nil {
+	    hasexploded = err.Error()
+	} else if err := r.Body.Close(); err != nil {
+	    hasexploded = err.Error()
+	} else if err := json.Unmarshal(body, &interest); err != nil {
+	    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	    w.WriteHeader(422) // unprocessable entity
+	    if err := json.NewEncoder(w).Encode(err); err != nil {
+	        hasexploded = err.Error()
+	    }
+	} else {
+		err := utilsservice.RegisterInterest(interest)
+		
+		if err != nil {
+			if err.Error() == "blank credentials" {
+				w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+		    	w.WriteHeader(http.StatusBadRequest)	
+			} else {
+				hasexploded = err.Error()
+			}		
+		} else {
+			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	    	w.WriteHeader(http.StatusCreated)
+		}   
+	}
+
+	if hasexploded != "" {
+		log.Printf(fmt.Sprintf("Handlers.RegisterInterest() - HasExploded! - Error: %v", hasexploded))
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    w.WriteHeader(http.StatusInternalServerError)	
+	}
+}
+
 func HelpPageIndex(w http.ResponseWriter, r *http.Request) {
     body, _ := ioutil.ReadFile("helppage/index.html")
     fmt.Fprint(w, string(body))
@@ -962,4 +1057,27 @@ func HelpPageGETChats(w http.ResponseWriter, r *http.Request) {
 func HelpPagePUTChats(w http.ResponseWriter, r *http.Request) {
     body, _ := ioutil.ReadFile("helppage/PUT-chats.html")
     fmt.Fprint(w, string(body))
+}
+
+func HelpPagePOSTInterest(w http.ResponseWriter, r *http.Request) {
+    body, _ := ioutil.ReadFile("helppage/POST-interest.html")
+    fmt.Fprint(w, string(body))
+}
+
+func HelpPagePUTExtraInfo(w http.ResponseWriter, r *http.Request) {
+    body, _ := ioutil.ReadFile("helppage/PUT-extrainfo.html")
+    fmt.Fprint(w, string(body))
+}
+
+func GetWordnik(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Handlers.GetWordnik() - ENTERED!!")
+	
+    _, err := utilsservice.GenerateRandomUsername()
+	
+	log.Printf(fmt.Sprintf("GetWordnik - Error: %v", err.Error()))
+	
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	
+	log.Printf("Handlers.GetWordnik() - EXIT!!")
 }
