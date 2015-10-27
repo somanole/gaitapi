@@ -135,7 +135,7 @@ func GenerateRandomUsername() (types.WordnikResponse, error) {
 	var wordnikResponse types.WordnikResponse
 	errorReturn = nil
 	
-	r, err := http.Get("http://api.wordnik.com/v4/words.json/randomWords?hasDictionaryDef=true&minCorpusCount=0&minLength=3&maxLength=15&limit=2&api_key=a2a73e7b926c924fad7001ca3111acd55af2ffabf50eb4ae5")
+	r, err := http.Get("http://api.wordnik.com/v4/words.json/randomWords?hasDictionaryDef=true&minCorpusCount=0&minLength=3&maxLength=15&limit=2&api_key=2d77126053be3f92b1d105a6fe605e66568b1f0549050e308")
 	
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
 	
