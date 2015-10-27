@@ -96,6 +96,12 @@ var routes = Routes{
         UpdateUserExtraInfo,
     },
 	Route{
+        "ReportUser",
+        "POST",
+        "/users/{userid}/report",
+        ReportUser,
+    },
+	Route{
         "CreateMatch",
         "POST",
         "/matches",
@@ -132,6 +138,12 @@ var routes = Routes{
         GetUserMessagesByReceiverId,
     },
 	Route{
+        "DeleteMessages",
+        "DELETE",
+        "/users/{userid}/messages",
+        DeleteMessages,
+    },
+	Route{
         "CreateUserActivity",
         "POST",
         "/users/{userid}/activities",
@@ -154,12 +166,6 @@ var routes = Routes{
         "POST",
         "/interests",
         RegisterInterest,
-    },
-	Route{
-        "GetWordnik",
-        "GET",
-        "/wordnik",
-        GetWordnik,
     },
 	Route{
         "HelpPageIndex",
@@ -286,5 +292,17 @@ var routes = Routes{
         "GET",
         "/help/PUT-extrainfo",
         HelpPagePUTExtraInfo,
+    },
+	Route{
+        "HelpPagePOSTUserReport",
+        "GET",
+        "/help/POST-user-report",
+        HelpPagePOSTUserReport,
+    },
+	Route{
+        "HelpPageDELETEMessage",
+        "GET",
+        "/help/DELETE-message",
+        HelpPageDELETEMessage,
     },
 }

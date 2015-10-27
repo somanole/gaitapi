@@ -19,4 +19,10 @@ type MessageRequest struct {
 	Timestamp int64
 }
 
+type DeleteMessageRequest struct {
+	SenderId uuid.UUID
+	ReceiverId uuid.UUID
+	Timestamp int64
+}
 
+type DeleteMessagesRequest []DeleteMessageRequest

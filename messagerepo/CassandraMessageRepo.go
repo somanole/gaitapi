@@ -120,3 +120,23 @@ func (repo *CassandraMessageRepo) GetUserMessagesByReceiverId(userId string, rec
 	
 	return messages, err
 }
+
+func (repo *CassandraMessageRepo) DeleteMessage(senderId uuid.UUID, receiverId uuid.UUID, timestamp int64) error {
+	// get all messages for user
+	log.Printf(fmt.Sprintf("CassandraMessageRepo.DeleteMessage() - Received senderId: %v", senderId))
+	log.Printf(fmt.Sprintf("CassandraMessageRepo.DeleteMessage() - Received receiverId: %v", receiverId))
+	log.Printf(fmt.Sprintf("CassandraMessageRepo.DeleteMessage() - Received timestamp: %v", timestamp))
+	
+	var err error
+	err = nil
+	
+	sql := fmt.Sprintf("DELETE FROM messages WHERE sender_id = %v AND receiver_id = %v AND timestamp = %v", senderId, receiverId, timestamp)
+		
+	log.Printf(sql)
+		
+	if err = session.Query(sql).Exec(); err != nil {
+		log.Printf(fmt.Sprintf("CassandraMessageRepo.DeleteMessage() - Error: %v", err.Error()))
+	} 
+
+    return err
+}

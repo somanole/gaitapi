@@ -39,6 +39,7 @@ type UserUpdateRequest struct {
 	DeviceType string
 	Password string
 	GenderPreference string
+	IsTest bool
 }
 
 type UserByEmail struct {
@@ -85,4 +86,18 @@ type LoginResponse struct {
 	UserId uuid.UUID
 	Username string
 	Timestamp int64
+}
+
+type UserReport struct {
+	ReportedUserId uuid.UUID
+	ReporterUserId uuid.UUID
+	Reason string
+	Comment string
+	Timestamp int64
+}
+
+type UserReportRequest struct {
+	ReporterUserId uuid.UUID
+	Reason string
+	Comment string
 }

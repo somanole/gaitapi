@@ -10,7 +10,6 @@ import (
 	"log"
 	"github.com/gorilla/mux"
 	"github.com/somanole/gaitapi/types"
-	"github.com/somanole/gaitapi/userrepo"
 	"github.com/somanole/gaitapi/matchservice"
 	"github.com/somanole/gaitapi/messageservice"
 	"github.com/somanole/gaitapi/accesscodeservice"
@@ -20,12 +19,6 @@ import (
 	"github.com/somanole/gaitapi/chatservice"
 	"github.com/somanole/gaitapi/utilsservice"
 )
-
-var userRepo userrepo.UserRepo
-
-func init() {
-	userRepo = userrepo.New()
-}
 
 func Index(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintln(w, "Let's go for a walk.")
@@ -245,7 +238,7 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 		if userId != "" {
 			var response types.GetUserResponse
 		
-		    user, err := userRepo.GetUser(userId)
+		    user, err := userservice.GetUser(userId)
 			
 			if err != nil {
 				if err.Error() == "not found" {
@@ -313,7 +306,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	            hasexploded = err.Error()	
 	        }
 	    } else {
-			response, err := userRepo.UpdateUser(userId, user)
+			response, err := userservice.UpdateUser(userId, user)
 		
 			if err != nil {
 				if err.Error() == "not found" {
@@ -358,7 +351,7 @@ func GetUserByEmail(w http.ResponseWriter, r *http.Request) {
 	log.Printf(fmt.Sprintf("GetUserByEmail handler - email received: %v", email))
 	
 	if email != "" {
-	    response, err := userRepo.GetUserByEmail(email)
+	    response, err := userservice.GetUserByEmail(email)
 		
 		if err != nil{
 			if err.Error() == "not found" {
@@ -398,7 +391,7 @@ func GetUserExtraInfo(w http.ResponseWriter, r *http.Request) {
 	
 	if err := utilsservice.CheckUserPassword(userId, password); err == nil {
 		if userId != "" {
-		    response, err := userRepo.GetUserExtraInfo(userId)
+		    response, err := userservice.GetUserExtraInfo(userId)
 			
 			if err != nil{
 				if err.Error() == "not found" {
@@ -482,6 +475,52 @@ func UpdateUserExtraInfo(w http.ResponseWriter, r *http.Request) {
 	    w.WriteHeader(http.StatusUnauthorized)
 	} else {
 		hasexploded = err.Error()
+	}
+
+	if hasexploded != "" {
+		log.Printf(fmt.Sprintf("Handlers.UpdateUserExtraInfo() - HasExploded! - Error: %v", hasexploded))
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
+func ReportUser(w http.ResponseWriter, r *http.Request) {
+	var urr types.UserReportRequest
+	var hasexploded string
+	hasexploded = ""
+	
+	vars := mux.Vars(r)
+	userId := vars["userid"]	
+	
+	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+	
+    if err != nil {
+        hasexploded = err.Error()
+	} else if err := r.Body.Close(); err != nil {
+	    hasexploded = err.Error()
+	} else if err := json.Unmarshal(body, &urr); err != nil {
+	    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	    w.WriteHeader(422) // unprocessable entity
+	    if err := json.NewEncoder(w).Encode(err); err != nil {
+	        hasexploded = err.Error()	
+	    }
+	} else {
+		err := userservice.ReportUser(userId, urr)
+		
+		if err != nil {
+			if err.Error() == "not found" {
+				w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+			    w.WriteHeader(http.StatusNotAcceptable)	
+			} else if err.Error() == "not uuid" || err.Error() == "400" {
+				w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+			    w.WriteHeader(http.StatusBadRequest)	
+			} else {
+				hasexploded = err.Error()
+			}
+		} else {
+			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		 	w.WriteHeader(http.StatusCreated)
+		}
 	}
 
 	if hasexploded != "" {
@@ -801,6 +840,69 @@ func GetUserMessagesByReceiverId(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func DeleteMessages(w http.ResponseWriter, r *http.Request) {
+	var dmsr types.DeleteMessagesRequest
+	var hasexploded string
+	hasexploded = ""
+	
+	vars := mux.Vars(r)
+	userId := vars["userid"]
+	
+	password := r.Header.Get("key")
+	
+	if err := utilsservice.CheckUserPassword(userId, password); err == nil {
+		if userId != "" {
+			body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+		
+		    if err != nil {
+		        hasexploded = err.Error()
+		    } else if err := r.Body.Close(); err != nil {
+		        hasexploded = err.Error()
+		    } else if err := json.Unmarshal(body, &dmsr); err != nil {
+		        w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		        w.WriteHeader(422) // unprocessable entity
+		        if err := json.NewEncoder(w).Encode(err); err != nil {
+		            hasexploded = err.Error()
+		        }
+		    } else {
+				err := messageservice.DeleteMessages(userId, dmsr)
+			
+				if err != nil {
+					if err.Error() == "not found" {
+						w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+		    			w.WriteHeader(http.StatusNotAcceptable)	
+					} else if err.Error() == "not uuid" {
+						w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+			    		w.WriteHeader(http.StatusBadRequest)	
+					} else if err.Error() == "401" {
+						w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+			    		w.WriteHeader(http.StatusUnauthorized)	
+					} else {
+						hasexploded = err.Error()
+					}		
+				} else {
+					w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+			    	w.WriteHeader(http.StatusOK)
+				}   
+			}
+		} else {
+			w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    	w.WriteHeader(http.StatusBadRequest)	
+		}
+	} else if err.Error() == "401" || err.Error() == "not found" {
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    w.WriteHeader(http.StatusUnauthorized)
+	} else {
+		hasexploded = err.Error()
+	}
+	
+	if hasexploded != "" {
+		log.Printf(fmt.Sprintf("Handlers.DeleteMessages() - HasExploded! - Error: %v", hasexploded))
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    w.WriteHeader(http.StatusInternalServerError)	
+	}
+}
+
 func CreateUserActivity(w http.ResponseWriter, r *http.Request) {
 	var activity types.ActivityRequest
 	var hasexploded string
@@ -1069,15 +1171,13 @@ func HelpPagePUTExtraInfo(w http.ResponseWriter, r *http.Request) {
     fmt.Fprint(w, string(body))
 }
 
-func GetWordnik(w http.ResponseWriter, r *http.Request) {
-	log.Printf("Handlers.GetWordnik() - ENTERED!!")
-	
-    _, err := utilsservice.GenerateRandomUsername()
-	
-	log.Printf(fmt.Sprintf("GetWordnik - Error: %v", err.Error()))
-	
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
-	
-	log.Printf("Handlers.GetWordnik() - EXIT!!")
+func HelpPagePOSTUserReport(w http.ResponseWriter, r *http.Request) {
+    body, _ := ioutil.ReadFile("helppage/POST-user-report.html")
+    fmt.Fprint(w, string(body))
 }
+
+func HelpPageDELETEMessage(w http.ResponseWriter, r *http.Request) {
+    body, _ := ioutil.ReadFile("helppage/DELETE-message.html")
+    fmt.Fprint(w, string(body))
+}
+

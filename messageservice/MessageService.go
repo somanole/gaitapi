@@ -2,6 +2,7 @@
 package messageservice
 
 import (
+	"fmt"
 	"strings"
 	"time"
 	"github.com/somanole/gaitapi/messagerepo"
@@ -40,9 +41,10 @@ func CreateMessage(userId string, receiverId string, mr types.MessageRequest) er
 		if err = messageRepo.CreateMessage(m); err == nil {
 			err = chatservice.UpdateLastMessageChat(userId, receiverId, m.Text)
 			
-			var lastActivity types.Activity
-			if lastActivity, err = activityservice.GetUserActivity(receiverId); err == nil {
-				err = notificationsservice.SendPushNotification(lastActivity.DeviceType, lastActivity.PushToken, m.Text)
+			if lastActivity, errA := activityservice.GetUserActivity(receiverId); errA == nil {
+				senderUsername, _ := utilsservice.GetUserUsername(userId)
+				pushMessage := fmt.Sprintf("%s: %s", senderUsername, m.Text)
+				notificationsservice.SendPushNotification(lastActivity.DeviceType, lastActivity.PushToken, pushMessage)
 			}
 		}
 	}
@@ -62,4 +64,17 @@ func GetUserMessagesByReceiverId(userId string, receiverId string, startdate str
 	}
 	
 	return response, err
+}
+
+func DeleteMessages(userId string, dmsr types.DeleteMessagesRequest) error {
+	var err error
+	err = nil
+	
+	if err = utilsservice.CheckIfUUID(userId); err == nil {		
+		for _,dmr := range dmsr {		
+			err = messageRepo.DeleteMessage(dmr.SenderId, dmr.ReceiverId, dmr.Timestamp)
+		}
+	}
+	
+	return err
 }

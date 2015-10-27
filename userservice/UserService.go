@@ -43,6 +43,30 @@ func Login(l types.LoginRequest) (types.LoginResponse, error) {
 	return response, err
 }
 
+func GetUser(userId string) (types.User, error) {
+	var err error
+	var response types.User 
+	err = nil
+	
+	if err = utilsservice.CheckIfUUID(userId); err == nil {
+		response, err = userRepo.GetUser(userId)
+	}
+	
+	return response, err
+}
+
+func GetUserExtraInfo(userId string) (types.UserExtraInfo, error) {
+	var err error
+	var response types.UserExtraInfo 
+	err = nil
+	
+	if err = utilsservice.CheckIfUUID(userId); err == nil {
+		response, err = userRepo.GetUserExtraInfo(userId)
+	}
+	
+	return response, err
+}
+
 func UpdateUserExtraInfo(userId string, uer types.UserExtraInfoRequest) error {
 	var err error
 	err = nil
@@ -59,6 +83,25 @@ func UpdateUserExtraInfo(userId string, uer types.UserExtraInfoRequest) error {
 		} else {
 			err = errors.New("400")
 		}
+	}
+	
+	return err
+}
+
+func ReportUser(userId string, urr types.UserReportRequest) error {
+	var err error
+	err = nil
+	
+	if err = utilsservice.CheckIfUserExists(userId); err == nil {
+		var ur types.UserReport
+		
+		ur.ReportedUserId = uuid.Parse(userId)
+		ur.ReporterUserId = urr.ReporterUserId
+		ur.Reason = urr.Reason
+		ur.Comment = urr.Comment
+		ur.Timestamp = int64(time.Now().UTC().Unix())
+		
+		err = userRepo.ReportUser(ur)
 	}
 	
 	return err
@@ -110,6 +153,47 @@ func CreateUser(ur types.UserRequest) (types.CreateUserResponse, error) {
 		response, err = userRepo.CreateUser(u)
 	} else if userByEmail.Email != "" {
 		err = errors.New("email already registered")
+	}
+	
+	return response, err
+}
+
+func UpdateUser(userId string, u types.UserUpdateRequest) (types.CreateUserResponse, error) {
+	var err error
+	var response types.CreateUserResponse 
+	err = nil
+	
+	if err = utilsservice.CheckIfUUID(userId); err == nil {
+		var user types.User
+		
+		if user, err = GetUser(userId); err == nil {
+			user.Timestamp = int64(time.Now().UTC().Unix())
+			user.IsTest = u.IsTest
+			
+			if u.FacebookAccessToken != "" { 
+				user.FacebookAccessToken = u.FacebookAccessToken
+			}
+			if u.DeviceType != "" {
+				user.DeviceType = u.DeviceType
+			}
+			if u.GenderPreference != "" {
+				user.GenderPreference = u.GenderPreference
+			}
+			if u.GoogleAccessToken != "" {
+				user.GoogleAccessToken = u.GoogleAccessToken
+			}
+			if u.Password != "" {
+				user.Password = u.Password
+			}
+			if u.PushToken != "" {
+				user.PushToken = u.PushToken
+			}
+			if u.TwitterAccessToken != "" {
+				user.TwitterAccessToken = u.TwitterAccessToken
+			}
+			
+			response, err = userRepo.UpdateUser(user)
+		}
 	}
 	
 	return response, err

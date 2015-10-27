@@ -4,10 +4,8 @@
 package userrepo
 
 import (
-	"errors"
 	"fmt"
 	"log"
-	"time"
 	"github.com/somanole/gaitapi/types"
 	"github.com/gocql/gocql"
 	"code.google.com/p/go-uuid/uuid"
@@ -57,7 +55,7 @@ func (repo *CassandraUserRepo) CreateUser(u types.User) (types.CreateUserRespons
 				
 	log.Printf(sql)
 	if err = session.Query(sql).Exec(); err != nil {
-		log.Printf(fmt.Sprintf("CreateUser - Error: %v", err.Error()))
+		log.Printf(fmt.Sprintf("CassandraUserRepo.CreateUser() - Error: %v", err.Error()))
 	} else {
 		response.UserId = u.UserId
 		response.Username = u.Username
@@ -76,7 +74,7 @@ func (repo *CassandraUserRepo) CreateUser(u types.User) (types.CreateUserRespons
 					
 		log.Printf(sql)
 		if err = session.Query(sql).Exec(); err != nil {
-			log.Printf(fmt.Sprintf("CreateUser - Error: %v", err.Error()))
+			log.Printf(fmt.Sprintf("CassandraUserRepo.CreateUser() - Error: %v", err.Error()))
 		} 
 	}
 	
@@ -85,119 +83,61 @@ func (repo *CassandraUserRepo) CreateUser(u types.User) (types.CreateUserRespons
 
 func (repo *CassandraUserRepo) GetUser(userId string) (types.User, error) {
 	// get user by id
-	log.Printf(fmt.Sprintf("GetUser - Received userId: %v", userId))
-	
 	var user types.User
 	var user_id string
 	var err error
 	err = nil
 	
-	if uuid.Parse(userId) != nil {
-		sql := fmt.Sprintf(`SELECT user_id, username, facebook_access_token, 
-		twitter_access_token, google_access_token, push_token, 
-		device_type, email, password, is_test, is_anonymous, gender_preference, 
-		timestamp FROM users WHERE user_id = %v LIMIT 1`, userId)
+	sql := fmt.Sprintf(`SELECT user_id, username, facebook_access_token, 
+	twitter_access_token, google_access_token, push_token, 
+	device_type, email, password, is_test, is_anonymous, gender_preference, 
+	timestamp FROM users WHERE user_id = %v LIMIT 1`, userId)
 		
-		log.Printf(sql)
+	log.Printf(sql)
 		
-		if err = session.Query(sql).Scan(&user_id, 
-			&user.Username, &user.FacebookAccessToken, &user.TwitterAccessToken, &user.GoogleAccessToken,
-			&user.PushToken, &user.DeviceType, &user.Email,
-			&user.Password, &user.IsTest, &user.IsAnonymous, &user.GenderPreference, &user.Timestamp); err != nil {
-				log.Printf(fmt.Sprintf("GetUser - Error: %v", err.Error()))
-		} else {
-			user.UserId = uuid.Parse(user_id)
-		}
+	if err = session.Query(sql).Scan(&user_id, 
+		&user.Username, &user.FacebookAccessToken, &user.TwitterAccessToken, &user.GoogleAccessToken,
+		&user.PushToken, &user.DeviceType, &user.Email,
+		&user.Password, &user.IsTest, &user.IsAnonymous, &user.GenderPreference, &user.Timestamp); err != nil {
+			log.Printf(fmt.Sprintf("CassandraUserRepo.GetUser() - Error: %v", err.Error()))
 	} else {
-		log.Printf(fmt.Sprintf("GetUser - Received userId: %v is not UUID", userId))
-		err = errors.New("not uuid")
+		user.UserId = uuid.Parse(user_id)
 	}
 	
 	return user, err
 }
 
-func (repo *CassandraUserRepo) UpdateUser(userId string, u types.UserUpdateRequest) (types.CreateUserResponse, error) {
-    // insert user in users
-	log.Printf(fmt.Sprintf("UpdateUser - Received userId: %v", userId))
-	
-	var user types.User
+func (repo *CassandraUserRepo) UpdateUser(user types.User) (types.CreateUserResponse, error) {
+    // insert user in users	
 	var err error
 	var response types.CreateUserResponse
 	err = nil
 	
-	if uuid.Parse(userId) != nil {
-		var user_id string
-		
-		sql := fmt.Sprintf(`SELECT user_id, username, facebook_access_token, 
-		twitter_access_token, google_access_token, push_token, 
-		device_type, email, password, is_test, is_anonymous, gender_preference, 
-		timestamp FROM users WHERE user_id = %v LIMIT 1`, userId)
-		
-		log.Printf(sql)
-		
-		if err = session.Query(sql).Scan(&user_id, 
-			&user.Username, &user.FacebookAccessToken, &user.TwitterAccessToken, &user.GoogleAccessToken,
-			&user.PushToken, &user.DeviceType, &user.Email,
-			&user.Password, &user.IsTest, &user.IsAnonymous, &user.GenderPreference, &user.Timestamp); err != nil {
-				log.Printf(fmt.Sprintf("UpdateUser - Error: %v", err.Error()))
-		} else {
-			user.UserId = uuid.Parse(user_id)
-			user.Timestamp = int64(time.Now().UTC().Unix())
-			
-			if u.FacebookAccessToken != "" { 
-				user.FacebookAccessToken = u.FacebookAccessToken
-			}
-			if u.DeviceType != "" {
-				user.DeviceType = u.DeviceType
-			}
-			if u.GenderPreference != "" {
-				user.GenderPreference = u.GenderPreference
-			}
-			if u.GoogleAccessToken != "" {
-				user.GoogleAccessToken = u.GoogleAccessToken
-			}
-			if u.Password != "" {
-				user.Password = u.Password
-			}
-			if u.PushToken != "" {
-				user.PushToken = u.PushToken
-			}
-			if u.TwitterAccessToken != "" {
-				user.TwitterAccessToken = u.TwitterAccessToken
-			}
-			
-			sql := fmt.Sprintf(`INSERT INTO users (user_id, username, 
-			facebook_access_token, twitter_access_token, google_access_token, 
-			push_token, device_type, email, password, is_test,
-			is_anonymous, gender_preference, timestamp) 
-			VALUES (%v, '%v', '%v', '%v', '%v', '%v', '%v', '%v', '%v', %v, %v,
-			'%v', %v)`, 
-			user.UserId, user.Username, user.FacebookAccessToken, user.TwitterAccessToken, 
-			user.GoogleAccessToken, user.PushToken, user.DeviceType, 
-			user.Email, user.Password, user.IsTest, user.IsAnonymous, user.GenderPreference, 
-			user.Timestamp)
+	sql := fmt.Sprintf(`INSERT INTO users (user_id, username, 
+	facebook_access_token, twitter_access_token, google_access_token, 
+	push_token, device_type, email, password, is_test,
+	is_anonymous, gender_preference, timestamp) 
+	VALUES (%v, '%v', '%v', '%v', '%v', '%v', '%v', '%v', '%v', %v, %v,
+	'%v', %v)`, 
+	user.UserId, user.Username, user.FacebookAccessToken, user.TwitterAccessToken, 
+	user.GoogleAccessToken, user.PushToken, user.DeviceType, 
+	user.Email, user.Password, user.IsTest, user.IsAnonymous, user.GenderPreference, 
+	user.Timestamp)
 				
-			log.Printf(sql)
-			if err = session.Query(sql).Exec(); err != nil {
-				log.Printf(fmt.Sprintf("UpdateUser - Error: %v", err.Error()))
-			} else {
-				response.UserId = user.UserId
-				response.Username = user.Username
-				response.Timestamp = user.Timestamp
-			}	
-		}
+	log.Printf(sql)
+	if err = session.Query(sql).Exec(); err != nil {
+		log.Printf(fmt.Sprintf("CassandraUserRepo.UpdateUser() - Error: %v", err.Error()))
 	} else {
-		log.Printf(fmt.Sprintf("UpdateUser - Received userId: %v is not UUID", userId))
-		err = errors.New("not uuid")
+		response.UserId = user.UserId
+		response.Username = user.Username
+		response.Timestamp = user.Timestamp
 	}
 
     return response, err
 }
 
 func (repo *CassandraUserRepo) GetUserByEmail(email string) (types.UserByEmail, error) {
-	// get user by email
-	log.Printf(fmt.Sprintf("GetUserByEmail - Received email: %v", email))
-	
+	// get user by email	
 	var user types.UserByEmail
 	var user_id string
 	var err error
@@ -208,7 +148,7 @@ func (repo *CassandraUserRepo) GetUserByEmail(email string) (types.UserByEmail, 
 	log.Printf(sql)
 		
 	if err = session.Query(sql).Scan(&user.Email, &user_id); err != nil {
-			log.Printf(fmt.Sprintf("GetUserByEmail - Error: %v", err.Error()))
+			log.Printf(fmt.Sprintf("CassandraUserRepo.GetUserByEmail() - Error: %v", err.Error()))
 	} else {
 		user.UserId = uuid.Parse(user_id)
 	}
@@ -217,27 +157,20 @@ func (repo *CassandraUserRepo) GetUserByEmail(email string) (types.UserByEmail, 
 }
 
 func (repo *CassandraUserRepo) GetUserExtraInfo(userId string) (types.UserExtraInfo, error) {
-	// get user extra info
-	log.Printf(fmt.Sprintf("GetUserExtraInfo - Received userId: %v", userId))
-	
+	// get user extra info	
 	var user types.UserExtraInfo
 	var user_id string
 	var err error
 	err = nil
 	
-	if uuid.Parse(userId) != nil {
-		sql := fmt.Sprintf("SELECT user_id, walking_progress, timestamp FROM users_extra_info WHERE user_id = %v LIMIT 1", userId)
+	sql := fmt.Sprintf("SELECT user_id, walking_progress, timestamp FROM users_extra_info WHERE user_id = %v LIMIT 1", userId)
 		
-		log.Printf(sql)
+	log.Printf(sql)
 		
-		if err = session.Query(sql).Scan(&user_id, &user.WalkingProgress, &user.Timestamp); err != nil {
-				log.Printf(fmt.Sprintf("GetUserExtraInfo - Error: %v", err.Error()))
-		} else {
-			user.UserId = uuid.Parse(user_id)
-		}
+	if err = session.Query(sql).Scan(&user_id, &user.WalkingProgress, &user.Timestamp); err != nil {
+		log.Printf(fmt.Sprintf("CassandraUserRepo.GetUserExtraInfo() - Error: %v", err.Error()))
 	} else {
-		log.Printf(fmt.Sprintf("GetUserExtraInfo - Received userId: %v is not UUID", userId))
-		err = errors.New("not uuid")
+		user.UserId = uuid.Parse(user_id)
 	}
 	
 	return user, err
@@ -254,7 +187,24 @@ func (repo *CassandraUserRepo) UpdateUserExtraInfo(ue types.UserExtraInfo) error
 	log.Printf(sql)
 		
 	if err = session.Query(sql).Exec(); err != nil {
-		log.Printf(fmt.Sprintf("UpdateUserExtraInfo - Error: %v", err.Error()))
+		log.Printf(fmt.Sprintf("CassandraUserRepo.UpdateUserExtraInfo() - Error: %v", err.Error()))
+	}
+	
+	return err
+}
+
+func (repo *CassandraUserRepo) ReportUser(ur types.UserReport) error {
+	// report user
+	var err error
+	err = nil
+	
+	sql := fmt.Sprintf(`INSERT INTO users_reported (reported_user_id, reporter_user_id, reason, comment, timestamp) 
+	values (%v, %v, '%v', '%v', %v)`, ur.ReportedUserId, ur.ReporterUserId, ur.Reason, ur.Comment, ur.Timestamp)
+		
+	log.Printf(sql)
+		
+	if err = session.Query(sql).Exec(); err != nil {
+		log.Printf(fmt.Sprintf("CassandraUserRepo.ReportUser() - Error: %v", err.Error()))
 	}
 	
 	return err

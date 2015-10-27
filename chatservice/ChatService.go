@@ -26,7 +26,7 @@ func CreateChat(cr types.ChatRequest) error {
 			var secondUsername string
 				
 			if firstUsername, err = utilsservice.GetUserUsername(cr.FirstUserId); err == nil {
-				if secondUsername, err = utilsservice.GetUserUsername(cr.FirstUserId); err == nil {
+				if secondUsername, err = utilsservice.GetUserUsername(cr.SecondUserId); err == nil {
 					var c types.Chat
 						
 					c.SenderId = uuid.Parse(cr.FirstUserId)
@@ -80,7 +80,10 @@ func UpdateChat (senderId string, receiverId string, action string) error {
 		case "unblock" :
 			err = UnblockChat(senderId, receiverId)
 		case "delete" :
-			err = DeleteChat(senderId, receiverId)
+			err = BlockChat(senderId, receiverId)
+			if err == nil {
+				err = DeleteChat(senderId, receiverId)
+			}
 	}
 	
 	return err
