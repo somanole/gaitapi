@@ -8,7 +8,7 @@ import (
 type (
 	MatchRepo interface {
 		CreateMatch(m types.Match) error
-		GetUserMatch(userId string) (types.Match, error)
+		GetUserMatch(userId string) (types.Match, error) 
 	}
 	
 	repoFactory func() MatchRepo

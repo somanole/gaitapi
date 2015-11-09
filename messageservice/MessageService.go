@@ -66,13 +66,33 @@ func GetUserMessagesByReceiverId(userId string, receiverId string, startdate str
 	return response, err
 }
 
+func GetUserLastMessageByReceiverId(userId string, receiverId string) (types.Message, error) {
+	var response types.Message
+	var err error
+	err = nil
+	
+	if err = utilsservice.CheckIfUserExists(userId); err == nil {
+		if err = utilsservice.CheckIfUserExists(userId); err == nil {	
+			response, err = messageRepo.GetUserLastMessageByReceiverId(userId, receiverId)
+		}
+	}
+	
+	return response, err
+}
+
 func DeleteMessages(userId string, dmsr types.DeleteMessagesRequest) error {
 	var err error
 	err = nil
 	
 	if err = utilsservice.CheckIfUUID(userId); err == nil {		
 		for _,dmr := range dmsr {		
-			err = messageRepo.DeleteMessage(dmr.SenderId, dmr.ReceiverId, dmr.Timestamp)
+			if err = messageRepo.DeleteMessage(dmr.SenderId, dmr.ReceiverId, dmr.Timestamp); err == nil {
+				var lastMessage types.Message
+				
+				if lastMessage, err = GetUserLastMessageByReceiverId(dmr.SenderId.String(), dmr.ReceiverId.String()); err == nil {
+					err = chatservice.UpdateLastMessageChat(dmr.SenderId.String(), dmr.ReceiverId.String(), lastMessage.Text)
+				}
+			}
 		}
 	}
 	

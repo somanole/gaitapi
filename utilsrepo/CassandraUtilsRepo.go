@@ -7,6 +7,7 @@ import (
 	"log"
 	"github.com/gocql/gocql"
 	"github.com/somanole/gaitapi/types"
+	"github.com/somanole/gaitapi/constants"
 )
 
 type (
@@ -25,7 +26,7 @@ func init() {
 
 func getCqlSession() *gocql.Session {
 	// connect to the cluster
-	cluster := gocql.NewCluster("127.0.0.1")
+	cluster := gocql.NewCluster(constants.CASSANDRA_MASTER)
 	cluster.Keyspace = "gait"
 	
 	s,_ := cluster.CreateSession()

@@ -6,6 +6,7 @@ import (
 	"github.com/somanole/gaitapi/accelerationrepo"
 	"github.com/somanole/gaitapi/utilsservice"
 	"github.com/somanole/gaitapi/userservice"
+	"github.com/somanole/gaitapi/kafkaservice"
 	"github.com/somanole/gaitapi/types"
 	"code.google.com/p/go-uuid/uuid"
 	"log"
@@ -45,10 +46,10 @@ func CreateAccelerations(userId string, accelerations types.AccelerationsRequest
 		
 		//increment walking progress for test users
 		if err == nil {
-			if user, errU := userservice.GetUser(userId); errU == nil {
-				if user.IsTest {
-					if userExtraInfo, errU := userservice.GetUserExtraInfo(userId); errU == nil {
-						if userExtraInfo.WalkingProgress < 100 {
+			if user, errU := userservice.GetUser(userId); errU == nil {			
+				if userExtraInfo, errU := userservice.GetUserExtraInfo(userId); errU == nil {
+					if userExtraInfo.WalkingProgress < 100 {
+						if user.IsTest {
 							var userExtraInfoRequest types.UserExtraInfoRequest
 							
 							if userExtraInfo.WalkingProgress >= 95 {
@@ -60,10 +61,15 @@ func CreateAccelerations(userId string, accelerations types.AccelerationsRequest
 							if errU := userservice.UpdateUserExtraInfo(userId, userExtraInfoRequest); errU != nil {
 								log.Printf(fmt.Sprintf("AccelerationService.CreateAccelerations() - Error: %v", errU.Error()))
 							}
+						} else {
+							if accelerations != nil && len(accelerations) > 1 {
+								kafkaMessage := fmt.Sprintf("%v,%v,%v", userId, accelerations[0].Timestamp, accelerations[len(accelerations)-1].Timestamp)
+								kafkaservice.ProduceMessage(kafkaMessage)
+							}				
 						}
-					} else {
-						log.Printf(fmt.Sprintf("AccelerationService.CreateAccelerations() - Error: %v", errU.Error()))
 					}
+				} else {
+						log.Printf(fmt.Sprintf("AccelerationService.CreateAccelerations() - Error: %v", errU.Error()))
 				}
 			} else {
 				log.Printf(fmt.Sprintf("AccelerationService.CreateAccelerations() - Error: %v", errU.Error()))
@@ -72,4 +78,16 @@ func CreateAccelerations(userId string, accelerations types.AccelerationsRequest
 	}
 	
 	return err
+}
+
+func GetAccelerations (userId string) (types.Accelerations, error) {
+	var accelerations types.Accelerations
+	var err error
+	err = nil
+	
+	if err = utilsservice.CheckIfUserExists(userId); err == nil {
+		accelerations, err = accelerationRepo.GetAccelerations(userId)
+	}
+	
+	return accelerations, err
 }

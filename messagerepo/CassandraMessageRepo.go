@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"github.com/somanole/gaitapi/types"
+	"github.com/somanole/gaitapi/constants"
 	"github.com/gocql/gocql"
 	"code.google.com/p/go-uuid/uuid"
 	"sort"
@@ -34,7 +35,7 @@ func init() {
 
 func getCqlSession() *gocql.Session {
 	// connect to the cluster
-	cluster := gocql.NewCluster("127.0.0.1")
+	cluster := gocql.NewCluster(constants.CASSANDRA_MASTER)
 	cluster.Keyspace = "gait"
 	
 	s,_ := cluster.CreateSession()
@@ -119,6 +120,64 @@ func (repo *CassandraMessageRepo) GetUserMessagesByReceiverId(userId string, rec
 	}
 	
 	return messages, err
+}
+
+func (repo *CassandraMessageRepo) GetUserLastMessageByReceiverId(userId string, receiverId string) (types.Message, error) {
+	// get last message for user
+	log.Printf(fmt.Sprintf("CassandraMessageRepo.GetUserLastMessageByReceiverId() - Received userId: %v", userId))
+	log.Printf(fmt.Sprintf("CassandraMessageRepo.GetUserLastMessageByReceiverId() - Received receiverId: %v", receiverId))
+	
+	var messages types.Messages
+	var err error
+	err = nil
+	
+	var message_id, sender_id, receiver_id string
+	var text string
+	var is_read bool
+	var timestamp int64
+	var sql string
+		
+	//sender messages
+	sql = fmt.Sprintf(`SELECT message_id, sender_id, receiver_id, text, is_read, 
+	timestamp FROM messages WHERE sender_id = %v AND receiver_id = %v LIMIT 1`, userId, receiverId)
+		
+	log.Printf(sql)
+		
+	iter := session.Query(sql).Iter()
+	for iter.Scan(&message_id, &sender_id, &receiver_id, &text, &is_read, &timestamp) {
+		messages = append(messages, types.Message{MessageId: uuid.Parse(message_id), SenderId: uuid.Parse(sender_id), 
+		ReceiverId: uuid.Parse(receiver_id), Text: text, IsRead: is_read, Timestamp: timestamp})
+	}
+	if err = iter.Close(); err != nil {
+		log.Printf(fmt.Sprintf("CassandraMessageRepo.GetUserLastMessageByReceiverId() - Error: %v", err.Error()))
+	}
+		
+	//receiver messages
+	sql = fmt.Sprintf(`SELECT message_id, sender_id, receiver_id, text, is_read, 
+	timestamp FROM messages WHERE sender_id = %v AND receiver_id = %v`, receiverId, userId)
+	
+	log.Printf(sql)
+		
+	iter2 := session.Query(sql).Iter()
+	for iter2.Scan(&message_id, &sender_id, &receiver_id, &text, &is_read, &timestamp) {
+		messages = append(messages, types.Message{MessageId: uuid.Parse(message_id), SenderId: uuid.Parse(sender_id), 
+		ReceiverId: uuid.Parse(receiver_id), Text: text, IsRead: is_read, Timestamp: timestamp})
+	}
+	if err = iter2.Close(); err != nil {
+		log.Printf(fmt.Sprintf("CassandraMessageRepo.GetUserLastMessageByReceiverId() - Error: %v", err.Error()))
+	}
+		
+	if messages != nil {
+		sort.Sort(ByTimestamp(messages))
+	}
+	
+	var message types.Message
+	
+	if len(messages) > 0 {
+		message = messages[0]
+	}
+	
+	return message, err
 }
 
 func (repo *CassandraMessageRepo) DeleteMessage(senderId uuid.UUID, receiverId uuid.UUID, timestamp int64) error {

@@ -162,6 +162,12 @@ var routes = Routes{
         CreateUserAcceleration,
     },
 	Route{
+        "GetAcceleration",
+        "GET",
+        "/users/{userid}/accelerations",
+        GetAcceleration,
+    },
+	Route{
         "RegisterInterest",
         "POST",
         "/interests",
@@ -304,5 +310,11 @@ var routes = Routes{
         "GET",
         "/help/DELETE-message",
         HelpPageDELETEMessage,
+    },
+	Route{
+        "ProduceKafkaMessage",
+        "GET",
+        "/kafka",
+        ProduceKafkaMessage,
     },
 }

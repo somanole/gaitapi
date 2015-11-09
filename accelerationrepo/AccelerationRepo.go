@@ -8,6 +8,7 @@ import (
 type (
 	AccelerationRepo interface {
 		CreateAcceleration(a types.Acceleration) error
+		GetAccelerations(userId string) (types.Accelerations, error)
 	}
 	
 	repoFactory func() AccelerationRepo

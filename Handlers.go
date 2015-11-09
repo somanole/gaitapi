@@ -18,6 +18,7 @@ import (
 	"github.com/somanole/gaitapi/userservice"
 	"github.com/somanole/gaitapi/chatservice"
 	"github.com/somanole/gaitapi/utilsservice"
+	"github.com/somanole/gaitapi/kafkaservice"
 )
 
 func Index(w http.ResponseWriter, r *http.Request) {
@@ -82,6 +83,58 @@ func CreateUserAcceleration(w http.ResponseWriter, r *http.Request) {
 		log.Printf(fmt.Sprintf("AccelerationCreate - HasExploded! - Error: %v", hasexploded))
 		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
 	    w.WriteHeader(http.StatusInternalServerError)	
+	}
+}
+
+func GetAcceleration(w http.ResponseWriter, r *http.Request) {
+	var hasexploded string
+	hasexploded = ""
+	
+	vars := mux.Vars(r)
+	userId := vars["userid"]
+	
+	password := r.Header.Get("key")
+	
+	if err := utilsservice.CheckUserPassword(userId, password); err == nil {
+		if userId != "" {
+		    response, err := accelerationservice.GetAccelerations(userId)
+			
+			if err != nil{
+				if err.Error() == "not found" {
+						w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+		    			w.WriteHeader(http.StatusNotAcceptable)	
+				} else if err.Error() == "not uuid" {
+					w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+		    		w.WriteHeader(http.StatusBadRequest)	
+				} else {
+					hasexploded = err.Error()
+				}		
+			} else if response != nil {
+			    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+			    w.WriteHeader(http.StatusOK)
+				
+			    if err := json.NewEncoder(w).Encode(response); err != nil {
+			        hasexploded = err.Error()
+			    }
+			} else {
+				w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+			    w.WriteHeader(http.StatusNoContent)
+			}	
+		} else {
+			w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    	w.WriteHeader(http.StatusBadRequest)	
+		}
+	} else if err.Error() == "401" || err.Error() == "not found" {
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    w.WriteHeader(http.StatusUnauthorized)
+	} else {
+		hasexploded = err.Error()
+	}
+	
+	if hasexploded != "" {
+		log.Printf(fmt.Sprintf("Handlers.GetAccelerations() - HasExploded! - Error: %v", hasexploded))
+		w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	    w.WriteHeader(http.StatusInternalServerError)
 	}
 }
 
@@ -1179,5 +1232,11 @@ func HelpPagePOSTUserReport(w http.ResponseWriter, r *http.Request) {
 func HelpPageDELETEMessage(w http.ResponseWriter, r *http.Request) {
     body, _ := ioutil.ReadFile("helppage/DELETE-message.html")
     fmt.Fprint(w, string(body))
+}
+
+func ProduceKafkaMessage(w http.ResponseWriter, r *http.Request) {	
+    kafkaservice.ProduceDummyMessage();
+	w.Header().Set("Content-Type", "text/css; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)	
 }
 

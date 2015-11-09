@@ -1,0 +1,152 @@
+chats         users_extra_info  messages                    users_by_id
+activities    interests         users_reported            
+match_groups  matches           matches_by_matched_user_id
+users         users_by_email    accelerations  
+
+CREATE KEYSPACE "gait"
+  WITH REPLICATION = {'class' : 'NetworkTopologyStrategy', 'dc1' : 3};
+
+CREATE TABLE gait.chats (
+    sender_id uuid,
+    receiver_id uuid,
+    is_chat_active boolean,
+    is_chat_blocked_by_receiver boolean,
+    is_chat_blocked_by_sender boolean,
+    last_message text,
+    receiver_username text,
+    "timestamp" timestamp,
+    PRIMARY KEY (sender_id, receiver_id)
+) WITH CLUSTERING ORDER BY (receiver_id ASC)
+
+CREATE TABLE gait.users_extra_info (
+    user_id uuid,
+    "timestamp" timestamp,
+    walking_progress int,
+    PRIMARY KEY (user_id, "timestamp")
+) WITH CLUSTERING ORDER BY ("timestamp" DESC)
+
+CREATE TABLE gait.messages (
+    sender_id uuid,
+    receiver_id uuid,
+    "timestamp" timestamp,
+    is_read boolean,
+    message_id uuid,
+    text text,
+    PRIMARY KEY ((sender_id, receiver_id), "timestamp")
+) WITH CLUSTERING ORDER BY ("timestamp" DESC)
+
+CREATE TABLE gait.users_by_id (
+    user_id uuid PRIMARY KEY,
+    email text,
+    username text
+)
+
+CREATE TABLE gait.activities (
+    user_id uuid,
+    "timestamp" timestamp,
+    device_id text,
+    device_type text,
+    is_logged_in boolean,
+    push_token text,
+    PRIMARY KEY (user_id, "timestamp")
+) WITH CLUSTERING ORDER BY ("timestamp" DESC)
+
+CREATE TABLE gait.interests (
+    email text,
+    "timestamp" timestamp,
+    PRIMARY KEY (email, "timestamp")
+) WITH CLUSTERING ORDER BY ("timestamp" DESC)
+
+CREATE TABLE gait.users_reported (
+    reported_user_id uuid,
+    "timestamp" timestamp,
+    comment text,
+    reason text,
+    reporter_user_id uuid,
+    PRIMARY KEY (reported_user_id, "timestamp")
+) WITH CLUSTERING ORDER BY ("timestamp" DESC)
+
+CREATE TABLE gait.match_groups (
+    groupname text,
+    hash_prefix int,
+    user_id uuid,
+    "timestamp" timestamp,
+    PRIMARY KEY ((groupname, hash_prefix), user_id)
+) WITH CLUSTERING ORDER BY (user_id ASC)
+
+CREATE TABLE gait.matches (
+    user_id uuid,
+    "timestamp" timestamp,
+    matched_user_id uuid,
+    matched_username text,
+    PRIMARY KEY (user_id, "timestamp")
+) WITH CLUSTERING ORDER BY ("timestamp" DESC)
+
+CREATE TABLE gait.matches_by_matched_user_id (
+    user_id uuid,
+    matched_user_id uuid,
+    "timestamp" timestamp,
+    matched_username text,
+    PRIMARY KEY ((user_id, matched_user_id), "timestamp")
+) WITH CLUSTERING ORDER BY ("timestamp" DESC)
+
+CREATE TABLE gait.users (
+    user_id uuid,
+    "timestamp" timestamp,
+    device_type text,
+    email text,
+    facebook_access_token text,
+    gender_preference text,
+    google_access_token text,
+    is_anonymous boolean,
+    is_test boolean,
+    password text,
+    push_token text,
+    twitter_access_token text,
+    username text,
+    PRIMARY KEY (user_id, "timestamp")
+) WITH CLUSTERING ORDER BY ("timestamp" DESC)
+
+CREATE TABLE gait.users_by_email (
+    email text PRIMARY KEY,
+    user_id uuid
+)
+
+CREATE TABLE gait.accelerations (
+    user_id uuid,
+    "timestamp" timestamp,
+    timestamp_long bigint,
+    x double,
+    y double,
+    z double,
+    PRIMARY KEY (user_id, "timestamp")
+) WITH CLUSTERING ORDER BY ("timestamp" DESC)
+
+CREATE TABLE gait.perfect_numbers (
+    user_id uuid,
+    "timestamp" timestamp,
+    timestamp_long bigint,
+    mean_x double,
+    mean_y double,
+    mean_z double,
+    variance_x double,
+    variance_y double,
+    variance_z double,
+    avg_abs_diff_x double,
+    avg_abs_diff_y double,
+    avg_abs_diff_z double,
+    resultant double,
+    avg_time_peak_y double,
+    perfect_number double,
+    PRIMARY KEY (user_id, perfect_number)
+) WITH CLUSTERING ORDER BY (perfect_number DESC)
+
+CREATE TABLE gait.perfect_numbers_by_user (
+    user_id uuid,
+    timestamp timestamp,
+    perfect_number double
+    PRIMARY KEY (user_id, timestamp)
+) WITH CLUSTERING ORDER BY (timestamp DESC)
+
+
+

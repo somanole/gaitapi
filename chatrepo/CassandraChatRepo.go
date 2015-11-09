@@ -2,10 +2,12 @@
 package chatrepo
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"time"
 	"github.com/somanole/gaitapi/types"
+	"github.com/somanole/gaitapi/constants"
 	"github.com/gocql/gocql"
 	"code.google.com/p/go-uuid/uuid"
 	"sort"
@@ -35,7 +37,7 @@ func init() {
 
 func getCqlSession() *gocql.Session {
 	// connect to the cluster
-	cluster := gocql.NewCluster("127.0.0.1")
+	cluster := gocql.NewCluster(constants.CASSANDRA_MASTER)
 	cluster.Keyspace = "gait"
 	
 	s,_ := cluster.CreateSession()
@@ -196,4 +198,116 @@ func (repo *CassandraChatRepo) UpdateLastMessageChat(senderId string, receiverId
 	} 
 
     return err
+}
+
+func (repo *CassandraChatRepo) GetUserMatch(userId string) (types.Match, error) {
+	// get match for user by id
+	log.Printf(fmt.Sprintf("CassandraChatRepo.GetUserMatch() - Received userId: %v", userId))
+	
+	var match types.Match
+	var user_id string
+	var matched_user_id string
+	var err error
+	err = nil
+	
+	sql := fmt.Sprintf(`SELECT user_id, matched_user_id, 
+	matched_username, timestamp 
+	FROM matches WHERE user_id = %v LIMIT 1`, userId)
+		
+	log.Printf(sql)
+		
+	if err = session.Query(sql).Scan(&user_id, &matched_user_id, 
+	&match.MatchedUsername, &match.Timestamp); err != nil {
+		log.Printf(fmt.Sprintf("CassandraChatRepo.GetUserMatch() - Error: %v", err.Error()))
+	} else {
+		match.UserId = uuid.Parse(user_id)
+		match.MatchedUserId = uuid.Parse(matched_user_id)
+	}
+
+	return match, err
+}
+
+func (repo *CassandraChatRepo) CreateMatch(m types.Match) error {
+    // insert match in matches
+	var err error
+	err = nil
+	
+	sql := fmt.Sprintf(`INSERT INTO matches (user_id, matched_user_id, matched_username, 
+	timestamp) VALUES (%v, %v, '%v', %v)`, 
+	m.UserId, m.MatchedUserId, m.MatchedUsername, m.Timestamp)
+						
+	log.Printf(sql)
+	if err = session.Query(sql).Exec(); err != nil {
+		log.Printf(fmt.Sprintf("CassandraChatRepo.CreateMatch() - Error: %v", err.Error()))
+	} else {
+		sql = fmt.Sprintf(`INSERT INTO matches_by_matched_user_id (user_id, matched_user_id, matched_username, 
+		timestamp) VALUES (%v, %v, '%v', %v)`, 
+		m.UserId, m.MatchedUserId, m.MatchedUsername, m.Timestamp)
+							
+		log.Printf(sql)
+		if err = session.Query(sql).Exec(); err != nil {
+			log.Printf(fmt.Sprintf("CassandraChatRepo.CreateMatch() - Error: %v", err.Error()))
+		} 
+	} 
+	
+    return err
+}
+
+func (repo *CassandraChatRepo) GetUserPerfectNumber(userId string) (types.PerfectNumber, error) {
+	// get match for user by id
+	log.Printf(fmt.Sprintf("CassandraChatRepo.GetUserPerfectNumber() - Received userId: %v", userId))
+	
+	var perfectNumber types.PerfectNumber
+	var user_id string
+	var err error
+	err = nil
+	
+	sql := fmt.Sprintf(`SELECT user_id, perfect_number 
+	FROM perfect_numbers WHERE user_id = %v LIMIT 1`, userId)
+		
+	log.Printf(sql)
+		
+	if err = session.Query(sql).Scan(&user_id, &perfectNumber.PerfectNumber); err != nil {
+		log.Printf(fmt.Sprintf("CassandraChatRepo.GetUserPerfectNumber() - Error: %v", err.Error()))
+	} else {
+		perfectNumber.UserId = uuid.Parse(user_id)
+	}
+
+	return perfectNumber, err
+}
+
+func (repo *CassandraChatRepo) GetUserPerfectMatch(rpf types.PerfectNumber) (types.PerfectNumber, error) {
+	// get match for user by id
+	
+	var perfectNumber types.PerfectNumber
+	var user_id string
+	var err error
+	err = nil
+	
+	sql := fmt.Sprintf(`SELECT user_id, perfect_number 
+	FROM perfect_numbers WHERE perfect_number < %v LIMIT 1 ALLOW FILTERING`, rpf.PerfectNumber)
+		
+	log.Printf(sql)
+		
+	if err = session.Query(sql).Scan(&user_id, &perfectNumber.PerfectNumber); err != nil {
+		log.Printf(fmt.Sprintf("CassandraChatRepo.GetUserPerfectMatch() - Error: %v", err.Error()))
+		
+		sql := fmt.Sprintf("SELECT user_id, perfect_number FROM perfect_numbers LIMIT 1")
+		
+		log.Printf(sql)
+		
+		if err = session.Query(sql).Scan(&user_id, &perfectNumber.PerfectNumber); err != nil {
+			log.Printf(fmt.Sprintf("CassandraChatRepo.GetUserPerfectMatch() - Error: %v", err.Error()))
+		} else {
+			if user_id != rpf.UserId.String() {
+				perfectNumber.UserId = uuid.Parse(user_id)
+			} else {
+				err = errors.New("not found")
+			}
+		}
+	} else {
+		perfectNumber.UserId = uuid.Parse(user_id)
+	}
+
+	return perfectNumber, err
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"github.com/somanole/gaitapi/types"
+	"github.com/somanole/gaitapi/constants"
 	"github.com/gocql/gocql"
 	"code.google.com/p/go-uuid/uuid"
 )
@@ -25,7 +26,7 @@ func init() {
 
 func getCqlSession() *gocql.Session {
 	// connect to the cluster
-	cluster := gocql.NewCluster("127.0.0.1")
+	cluster := gocql.NewCluster(constants.CASSANDRA_MASTER)
 	cluster.Keyspace = "gait"
 	
 	s,_ := cluster.CreateSession()
@@ -47,7 +48,7 @@ func (repo *CassandraActivityRepo) CreateUserActivity(a types.Activity) error {
 	if err = session.Query(sql).Exec(); err != nil {
 		log.Printf(fmt.Sprintf("CassandraActivityRepo.CreateActivity() - Error: %v", err.Error()))
 	} 
-	
+
     return err
 }
 
