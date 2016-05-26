@@ -6,5 +6,5 @@
 *.exe
 *.o
 *.so
+*.pem
 .DS_Store
-/certificates/apns
