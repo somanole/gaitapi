@@ -1,6 +1,6 @@
 # gaitapi
 
-REST API for GaitProject mobile app (http://gaitproject.com)
+REST API for GaitProject mobile app (http://gaitproject.entropi.io)
 
 Full documentation available at: http://api.gait.io/help
 
